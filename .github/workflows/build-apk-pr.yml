@@ -82,7 +82,7 @@ jobs:
           target: google_apis
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim
           disable-animations: true
-          script: cd project && set -o pipefail && gradle --no-daemon connectedDebugAndroidTest --stacktrace --info 2>&1 | tee app/build/emulator-test.log
+          script: bash -lc 'cd project && set -o pipefail && gradle --no-daemon connectedDebugAndroidTest --stacktrace --info 2>&1 | tee app/build/emulator-test.log'
 
       - name: Upload compiled and structurally verified APK
         if: always()
