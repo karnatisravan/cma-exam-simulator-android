@@ -3,3 +3,5 @@ This branch exists only to trigger the observable pull-request APK build workflo
 Diagnostic rerun: preserve APK and complete emulator output.
 
 Final rerun: execute instrumentation tests through Bash.
+
+Android 15 rerun: test with current WebView.
