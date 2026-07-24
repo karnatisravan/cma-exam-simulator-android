@@ -1,0 +1,104 @@
+name: Build Tested Android APK (PR)
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-test-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify uploaded Android project bundle
+        run: test -s android-project-bundle.zip
+
+      - name: Extract Android project
+        run: |
+          rm -rf project
+          mkdir project
+          unzip -q android-project-bundle.zip -d project
+          test -f project/settings.gradle
+          test -f project/app/build.gradle
+          test -f project/app/src/main/res/raw/cma_simulator.zip
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools" "emulator" "system-images;android-29;google_apis;x86_64"
+
+      - name: Run JVM tests and build APK
+        working-directory: project
+        run: gradle --no-daemon testDebugUnitTest assembleDebug
+
+      - name: Verify APK and embedded V6 simulator
+        run: |
+          APK=project/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee project/app/build/apk-badging.txt
+          grep -q "package: name='com.cmaexamsimulator.mobile'" project/app/build/apk-badging.txt
+          unzip -l "$APK" | tee project/app/build/apk-files.txt
+          grep -q 'res/raw/cma_simulator.zip' project/app/build/apk-files.txt
+          unzip -p "$APK" res/raw/cma_simulator.zip > project/app/build/embedded-web.zip
+          unzip -t project/app/build/embedded-web.zip
+          unzip -l project/app/build/embedded-web.zip | grep -q 'index.html'
+          unzip -l project/app/build/embedded-web.zip | grep -q 'hock-2024-2025-catalog.json'
+          unzip -l project/app/build/embedded-web.zip | grep -q 'cma-v2.js'
+          unzip -l project/app/build/embedded-web.zip | grep -q 'android-app.js'
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Android WebView smoke tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          profile: Nexus 6
+          target: google_apis
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim
+          disable-animations: true
+          script: cd project && gradle --no-daemon connectedDebugAndroidTest
+
+      - name: Prepare final APK
+        run: cp project/app/build/outputs/apk/debug/app-debug.apk US-CMA-Exam-Simulator-v6.0.apk
+
+      - name: Upload tested APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: US-CMA-Exam-Simulator-v6.0-APK
+          path: US-CMA-Exam-Simulator-v6.0.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-reports
+          path: |
+            project/app/build/reports/
+            project/app/build/outputs/androidTest-results/
+          if-no-files-found: ignore
+          retention-days: 7
