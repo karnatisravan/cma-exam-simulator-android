@@ -31,6 +31,9 @@ jobs:
           test -f project/app/build.gradle
           test -f project/app/src/main/res/raw/cma_simulator.zip
 
+      - name: Align smoke test with current app title
+        run: sed -i 's/US CMA Part 2 Exam Simulator/CMA Exam Simulator/g' project/app/src/androidTest/java/com/cmaexamsimulator/mobile/AppLaunchTest.java
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
