@@ -63,6 +63,7 @@ jobs:
           unzip -l project/app/build/embedded-web.zip | grep -q 'hock-2024-2025-catalog.json'
           unzip -l project/app/build/embedded-web.zip | grep -q 'cma-v2.js'
           unzip -l project/app/build/embedded-web.zip | grep -q 'android-app.js'
+          cp "$APK" US-CMA-Exam-Simulator-v6.0.apk
 
       - name: Enable KVM
         run: |
@@ -71,6 +72,8 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Run Android WebView smoke tests
+        id: smoke
+        continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 29
@@ -79,12 +82,10 @@ jobs:
           target: google_apis
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot-save -noaudio -no-boot-anim
           disable-animations: true
-          script: cd project && gradle --no-daemon connectedDebugAndroidTest
+          script: cd project && set -o pipefail && gradle --no-daemon connectedDebugAndroidTest --stacktrace --info 2>&1 | tee app/build/emulator-test.log
 
-      - name: Prepare final APK
-        run: cp project/app/build/outputs/apk/debug/app-debug.apk US-CMA-Exam-Simulator-v6.0.apk
-
-      - name: Upload tested APK
+      - name: Upload compiled and structurally verified APK
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: US-CMA-Exam-Simulator-v6.0-APK
@@ -92,13 +93,20 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload test reports on failure
-        if: failure()
+      - name: Upload Android test diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: android-test-reports
+          name: android-test-diagnostics
           path: |
+            project/app/build/emulator-test.log
             project/app/build/reports/
             project/app/build/outputs/androidTest-results/
+            project/app/build/apk-badging.txt
+            project/app/build/apk-files.txt
           if-no-files-found: ignore
           retention-days: 7
+
+      - name: Require emulator smoke-test success
+        if: steps.smoke.outcome != 'success'
+        run: exit 1
