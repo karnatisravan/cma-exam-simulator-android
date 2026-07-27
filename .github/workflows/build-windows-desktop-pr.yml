@@ -218,20 +218,24 @@ jobs:
         run: |
           Push-Location work/launcher
           go test ./...
+          go build -trimpath -o ../../release/US-CMA-Exam-Simulator-Desktop-v7-Test.exe .
           go build -trimpath -ldflags="-H windowsgui -s -w" -o ../../release/US-CMA-Exam-Simulator-Desktop-v7.exe .
           Pop-Location
-          $exe = "release/US-CMA-Exam-Simulator-Desktop-v7.exe"
-          if (!(Test-Path $exe)) { throw "Windows executable not built" }
-          if ((Get-Item $exe).Length -lt 1000000) { throw "Windows executable unexpectedly small" }
+          $guiExe = "release/US-CMA-Exam-Simulator-Desktop-v7.exe"
+          $testExe = "release/US-CMA-Exam-Simulator-Desktop-v7-Test.exe"
+          if (!(Test-Path $guiExe)) { throw "Windows GUI executable not built" }
+          if (!(Test-Path $testExe)) { throw "Windows test executable not built" }
+          if ((Get-Item $guiExe).Length -lt 1000000) { throw "Windows GUI executable unexpectedly small" }
           $target = Join-Path $env:RUNNER_TEMP "cma-desktop-v7-smoke"
           Remove-Item $target -Recurse -Force -ErrorAction SilentlyContinue
-          & $exe --extract-only --target $target
+          & $testExe --extract-only --target $target | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "Extraction smoke test failed" }
           foreach ($required in @("index.html", "cma-v2.js", "hock-2024-2025-catalog.json", "desktop-runtime.js")) {
             if (!(Test-Path (Join-Path $target $required))) { throw "Extracted runtime missing: $required" }
           }
-          $reported = & $exe --version
-          if ($reported.Trim() -ne $env:APP_VERSION) { throw "Version test failed" }
+          $reported = (& $testExe --version | Out-String).Trim()
+          if ($reported -ne $env:APP_VERSION) { throw "Version test failed: '$reported'" }
+          Remove-Item $testExe -Force
 
       - name: Create portable package
         shell: pwsh
