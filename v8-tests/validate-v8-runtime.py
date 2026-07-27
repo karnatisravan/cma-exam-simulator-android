@@ -37,10 +37,14 @@ def main(root: pathlib.Path) -> None:
     require(app, "CMAV8Core?.classifyQuestionType", "automatic legacy classification")
 
     require(core, "normalizeImportMetadata", "V22 metadata normalizer")
+    require(core, "unit_mapping_status", "pending unit-mapping handling")
+    require(core, "classification.reviewRequired", "classification review handling")
     require(app, "CMAV8Core?.normalizeImportMetadata", "compatibility importer normalizer hook")
     require(app, "rawQuestion.explanation !== null", "nullable explanation acceptance")
-    require(app, "!v8Import?.inactive", "archived unassigned-record acceptance")
+    require(app, "!v8Import?.inactive", "unassigned review-record acceptance")
     require(app, "section && unit ?", "safe unit ID generation")
+    require(app, 'v8Import?.reviewRequired ? "Classification review required"', "review retirement reason")
+    require(app, 'rawQuestion.status === "archived" || v8Import?.inactive', "review-record archival")
 
     for asset in ("cma-v8-core.js", "cma-v8.js", "cma-v8.css"):
         require(sw, asset, f"offline cache entry for {asset}")
@@ -55,7 +59,7 @@ def main(root: pathlib.Path) -> None:
     if forbidden:
         raise AssertionError(f"Copyrighted PDF must not be in public runtime: {forbidden}")
 
-    print("V8 runtime validation passed, including the V22 question-bank import hotfix.")
+    print("V8 runtime validation passed, including nullable metadata and safe archival of V22 review records.")
 
 
 if __name__ == "__main__":
