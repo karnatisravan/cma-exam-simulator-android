@@ -8,6 +8,46 @@ assert.strictEqual(core.classifyQuestionType({ question: "A project requires £4
 assert.strictEqual(core.classifyQuestionType({ question: "A company has a capacity constraint. Product A contributes £15 and uses 1.5 machine hours; Product B contributes £25 and uses 2.5 machine hours. Which product should it prioritise?", options: { A: "Product A", B: "Product B", C: "Both are equally profitable per constrained hour", D: "There is insufficient information" } }), "mixed");
 assert.strictEqual(core.classifyQuestionType({ questionType: "theory", question: "Contains £100 but is explicitly classified." }), "theory");
 
+const modernImport = core.normalizeImportMetadata({
+  id: "CMA2-Q-000052",
+  sectionId: "B",
+  unitId: "B-U05",
+  sectionName: null,
+  unitName: null,
+  explanation: null,
+  status: "active"
+});
+assert.deepStrictEqual(modernImport, {
+  section: "B",
+  unit: "Unit 5",
+  sectionName: "",
+  unitName: "",
+  explanation: "",
+  inactive: false
+});
+
+const dottedImport = core.normalizeImportMetadata({
+  sectionId: "E.2",
+  unitId: "E-U03",
+  explanation: 0
+});
+assert.strictEqual(dottedImport.section, "E");
+assert.strictEqual(dottedImport.unit, "Unit 3");
+assert.strictEqual(dottedImport.explanation, "0");
+
+const archivedUnassigned = core.normalizeImportMetadata({
+  id: "CMA2-Q-000242",
+  section: null,
+  unit: null,
+  sectionName: null,
+  unitName: null,
+  explanation: null,
+  status: "archived"
+});
+assert.strictEqual(archivedUnassigned.section, "");
+assert.strictEqual(archivedUnassigned.unit, "");
+assert.strictEqual(archivedUnassigned.inactive, true);
+
 const flash = core.parseFlashcardImport({
   title: "Section B",
   flashcards: [
@@ -32,4 +72,4 @@ assert.strictEqual(manifest.pageCount, 527);
 assert.strictEqual(manifest.outline[0].startPage, 4);
 assert.strictEqual(manifest.outline[0].endPage, 68);
 
-console.log("V8 core tests passed: classification, flashcard import, scheduling, and revision manifest.");
+console.log("V8 core tests passed: classification, V22 import normalization, flashcards, scheduling, and revision manifest.");
