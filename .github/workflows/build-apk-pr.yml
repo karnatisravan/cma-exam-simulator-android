@@ -31,10 +31,20 @@ jobs:
           test -f project/settings.gradle
           test -f project/app/build.gradle
           test -f project/app/src/main/res/raw/cma_simulator.zip
-          sed -i -E 's/versionCode[[:space:]]+[0-9]+/versionCode 801/' project/app/build.gradle
-          sed -i -E 's/versionName[[:space:]]+"[^"]+"/versionName "8.0.1"/' project/app/build.gradle
-          grep -q 'versionCode 801' project/app/build.gradle
-          grep -q 'versionName "8.0.1"' project/app/build.gradle
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("project/app/build.gradle")
+          text = path.read_text(encoding="utf-8")
+          text, code_count = re.subn(r"versionCode\s*(?:=\s*)?\d+", "versionCode 801", text, count=1)
+          text, name_count = re.subn(r"versionName\s*(?:=\s*)?[\"'][^\"']+[\"']", 'versionName "8.0.1"', text, count=1)
+          if code_count != 1 or name_count != 1:
+              raise SystemExit(f"Could not update Android version: versionCode={code_count}, versionName={name_count}")
+          path.write_text(text, encoding="utf-8")
+          PY
+          grep -Eq 'versionCode[[:space:]]*(=[[:space:]]*)?801' project/app/build.gradle
+          grep -Eq 'versionName[[:space:]]*(=[[:space:]]*)?"8\.0\.1"' project/app/build.gradle
 
       - name: Apply private-safe V8 web upgrade
         run: |
