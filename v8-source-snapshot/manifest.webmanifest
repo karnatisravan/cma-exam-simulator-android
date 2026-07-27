@@ -1,0 +1,22 @@
+{
+  "id": "./index.html",
+  "name": "US CMA Part 2 Exam Simulator",
+  "short_name": "CMA Simulator",
+  "description": "Offline-first US CMA Part 2 question banks, timed tests, notes, analytics, and case practice.",
+  "start_url": "./index.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f7f8f5",
+  "theme_color": "#14532d",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Add Questions", "short_name": "Add Questions", "url": "./index.html?action=add", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Build Test", "short_name": "Build Test", "url": "./index.html?action=build", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

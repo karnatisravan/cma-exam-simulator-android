@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14532d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="CMA Simulator">
+  <meta name="description" content="A private, offline US CMA Part 2 simulator with timed MCQs, case-based questions, full four-hour exams, review, and local history.">
+  <title>CMA Exam Simulator</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css?v=20260724.2">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header class="site-header">
+    <button class="brand-button" id="brand-home" type="button" aria-label="Go to dashboard">
+      <span class="brand-mark" aria-hidden="true">C</span>
+      <span>
+        <strong>CMA Exam Simulator</strong>
+        <small id="header-status-line">Local study workspace</small>
+      </span>
+    </button>
+    <div class="header-actions">
+      <span class="storage-badge" id="storage-badge" title="Your data stays in this browser">Loading local data…</span>
+      <button class="button button-secondary header-add" id="quick-add-questions" type="button">Add Questions</button>
+      <button class="button button-primary header-install" id="install-app-button" type="button" hidden>Install App</button>
+      <button class="button button-primary header-resume" id="header-resume" type="button" hidden>Resume exam</button>
+      <button class="icon-button" id="header-settings" type="button" aria-label="Open settings">Settings</button>
+      <button class="icon-button" id="theme-toggle" type="button" aria-label="Switch to dark mode" title="Toggle theme">
+        <span class="theme-icon" aria-hidden="true">☾</span>
+        <span class="theme-label">Dark</span>
+      </button>
+    </div>
+  </header>
+
+  <nav class="app-nav" aria-label="Simulator navigation">
+    <span class="nav-section-label" aria-hidden="true">Study workspace</span>
+    <button id="nav-dashboard" type="button"><span class="nav-glyph" aria-hidden="true">◫</span><span>Dashboard</span></button>
+    <button id="nav-exam-center" type="button"><span class="nav-glyph" aria-hidden="true">◷</span><span>Exam Center</span></button>
+    <button id="nav-bank" type="button"><span class="nav-glyph" aria-hidden="true">▦</span><span>Question Bank</span></button>
+    <button id="nav-progress" type="button"><span class="nav-glyph" aria-hidden="true">↗</span><span>Progress</span></button>
+    <button id="nav-study" type="button"><span class="nav-glyph" aria-hidden="true">◇</span><span>Study</span></button>
+    <button id="nav-settings" type="button"><span class="nav-glyph" aria-hidden="true">⚙</span><span>Settings</span></button>
+  </nav>
+
+  <main id="main-content" tabindex="-1">
+    <div id="global-message" class="message" role="status" aria-live="polite" hidden></div>
+
+    <section id="home-screen" class="screen dashboard-screen" aria-labelledby="home-title">
+      <div class="dashboard-heading">
+        <div><h1 id="home-title">CMA Exam Simulator</h1><p id="dashboard-status-line">Your private Part 2 study dashboard.</p></div>
+        <div class="dashboard-date"><span id="dashboard-date"></span><strong id="dashboard-study-week">This week</strong></div>
+      </div>
+      <div id="resume-banner" class="resume-banner" hidden>
+        <div>
+          <span class="eyebrow">Unfinished attempt found</span>
+          <h2 id="resume-title">Continue where you left off</h2>
+          <p id="resume-details"></p>
+        </div>
+        <div class="button-row">
+          <button class="button button-primary" id="resume-exam" type="button">Resume exam</button>
+          <button class="button button-quiet" id="discard-exam" type="button">Discard attempt</button>
+        </div>
+      </div>
+
+      <section aria-labelledby="study-status-title"><div class="compact-section-heading"><h2 id="study-status-title">Study status</h2><span id="home-exam-readiness-text">Checking exam readiness…</span></div><div class="dashboard-metric-grid">
+        <article><span>Study time this week</span><strong id="home-week-time">0 min</strong></article><article><span>Questions this week</span><strong id="home-week-questions">0</strong></article><article><span>Weekly accuracy</span><strong id="home-week-accuracy">—</strong></article><article><span>Study streak</span><strong id="home-streak">0 days</strong></article><article><span>Weakest unit</span><strong id="home-weakest-unit">Not enough data</strong></article><article><span>Due for review</span><strong id="home-due-count">0</strong></article>
+      </div></section>
+
+      <section class="dashboard-section" aria-labelledby="continue-title"><div class="compact-section-heading"><h2 id="continue-title">Continue studying</h2><button class="text-button" id="home-exam-center" type="button">Open Exam Center</button></div><div class="dashboard-action-grid">
+        <button class="dashboard-action primary" id="home-start" type="button"><strong>Start exam</strong><span>Choose a mode and configure coverage</span></button>
+        <button class="dashboard-action" id="home-weak" type="button"><strong>Practice weak areas</strong><span>Prioritize recurring misses</span></button>
+        <button class="dashboard-action" id="home-mixed" type="button"><strong>Mixed strong and weak</strong><span>Combine confidence with repair</span></button>
+        <button class="dashboard-action" id="home-review-mistakes" type="button"><strong>Review mistakes</strong><span>Return to incorrect questions</span></button>
+        <button class="dashboard-action" id="home-due-review" type="button"><strong>Due mastery review</strong><span>Strengthen learning questions</span></button>
+        <button class="dashboard-action" id="home-strong" type="button"><strong>Test strong areas</strong><span>Verify retained knowledge</span></button>
+        <button class="dashboard-action" id="home-full-exam" type="button"><strong>Four-hour simulation</strong><span>Strict or custom coverage</span></button>
+        <button class="dashboard-action" id="home-case-practice" type="button"><strong>Case practice</strong><span><span id="home-case-count">0</span> local case sets</span></button>
+      </div></section>
+
+      <div id="no-questions-card" class="empty-state" hidden>
+        <div class="empty-icon" aria-hidden="true">!</div>
+        <div>
+          <h2>No valid questions are loaded</h2>
+          <p>Import a JSON question bank or restore the demonstration questions before starting an exam.</p>
+        </div>
+        <button class="button button-primary" id="empty-manage-bank" type="button">Manage question bank</button>
+      </div>
+
+      <div class="dashboard-two-column">
+        <section class="panel compact-panel" aria-labelledby="bank-snapshot-title"><div class="compact-section-heading"><h2 id="bank-snapshot-title">Question Bank</h2><button class="text-button" id="home-import" type="button">Import questions</button></div><div class="mini-stat-grid"><div><span>Total</span><strong id="home-question-count">0</strong></div><div><span>Active</span><strong id="home-bank-active">0</strong></div><div><span>Retired</span><strong id="home-bank-retired">0</strong></div><div><span>Unclassified</span><strong id="home-bank-unclassified">0</strong></div><div><span>No explanation</span><strong id="home-bank-unexplained">0</strong></div></div><div class="button-row"><button class="button button-secondary" id="home-open-bank" type="button">Open Question Bank</button><button class="button button-quiet" id="home-reference-open" type="button">Sections &amp; Units</button></div></section>
+        <section class="panel compact-panel" aria-labelledby="performance-overview-title"><div class="compact-section-heading"><h2 id="performance-overview-title">Current performance</h2><button class="text-button" id="home-progress" type="button">Open Progress</button></div><div class="mini-stat-grid"><div><span>Lifetime accuracy</span><strong id="home-overall-accuracy">—</strong></div><div><span>Recent accuracy</span><strong id="home-recent-accuracy">—</strong></div><div><span>Average time</span><strong id="home-average-time">—</strong></div><div><span>Strongest section</span><strong id="home-strongest-section">—</strong></div><div><span>Most improved</span><strong id="home-improved-unit">—</strong></div></div><div id="home-progress-sparkline" class="mini-chart" aria-label="Recent accuracy trend"></div></section>
+      </div>
+
+      <div class="dashboard-two-column">
+        <section class="panel compact-panel" aria-labelledby="study-resources-title"><div class="compact-section-heading"><h2 id="study-resources-title">Study resources</h2><button class="text-button" id="home-study" type="button">Open Study</button></div><ul class="dashboard-resource-list"><li><span>Notes needing review</span><strong id="home-notes-review">0</strong></li><li><span>Unresolved mistakes</span><strong id="home-unresolved-mistakes">0</strong></li><li><span>Units not studied recently</span><strong id="home-stale-units">0</strong></li></ul></section>
+        <section class="panel compact-panel" aria-labelledby="recent-history-title"><div class="compact-section-heading"><h2 id="recent-history-title">Recent attempts</h2><button class="text-button" id="home-history" type="button">View full history</button></div><div id="latest-attempt" class="latest-content"></div><div id="home-recent-attempts" class="recent-attempt-list"></div></section>
+      </div>
+    </section>
+
+    <section id="setup-screen" class="screen" aria-labelledby="setup-title" hidden>
+      <div class="page-heading">
+        <div>
+          <button class="back-button" id="setup-back" type="button">← Back to modes</button>
+          <span class="eyebrow">Exam Center · Configuration</span>
+          <h1 id="setup-title">Configure exam</h1>
+          <p>Choose the scope and pace that match today’s study goal.</p>
+        </div>
+        <div class="availability-chip"><strong id="setup-available-count">0</strong> questions loaded</div>
+      </div>
+
+      <form id="setup-form" novalidate>
+        <div class="setup-layout">
+          <div class="setup-main">
+            <fieldset class="form-card">
+              <legend><span>1</span> Exam details</legend>
+              <div class="field">
+                <label for="exam-title">Exam title</label>
+                <input id="exam-title" name="examTitle" type="text" maxlength="100" value="CMA Practice Exam" required>
+              </div>
+            </fieldset>
+
+            <fieldset class="form-card coverage-card">
+              <legend><span>2</span> Choose exam coverage</legend>
+              <div class="coverage-toolbar">
+                <p>Select one or more CMA sections, then choose the units to include.</p>
+                <div class="button-row">
+                  <button class="text-button" id="select-all-sections" type="button">Select all sections</button>
+                  <button class="text-button danger-text" id="clear-sections" type="button">Clear all sections</button>
+                </div>
+              </div>
+              <div class="coverage-selector">
+                <div class="coverage-column">
+                  <h3>Sections</h3>
+                  <div id="coverage-sections" class="coverage-list" aria-label="CMA sections"></div>
+                </div>
+                <div class="coverage-column units-column">
+                  <div class="coverage-column-heading">
+                    <h3>Units in selected sections</h3>
+                    <div class="button-row">
+                      <button class="text-button" id="select-all-units" type="button">Select all units</button>
+                      <button class="text-button danger-text" id="clear-units" type="button">Clear all units</button>
+                    </div>
+                  </div>
+                  <div id="coverage-units" class="coverage-units" aria-label="Available units"></div>
+                </div>
+              </div>
+              <p id="eligible-count-message" class="eligible-message" role="status" aria-live="polite">0 questions are available from your selected sections and units.</p>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="question-count">Number of questions</label>
+                  <select id="question-count" name="questionCount">
+                    <option value="all">All eligible questions</option>
+                  </select>
+                </div>
+                <div class="field conditional-field" id="custom-count-wrap" hidden>
+                  <label for="custom-count">Custom question count</label>
+                  <input id="custom-count" name="customCount" type="number" min="1" inputmode="numeric">
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="form-card">
+              <legend><span>3</span> Timing and behavior</legend>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="time-limit">Time limit</label>
+                  <select id="time-limit" name="timeLimit">
+                    <option value="10">10 minutes</option>
+                    <option value="30">30 minutes</option>
+                    <option value="50" selected>50 minutes</option>
+                    <option value="90">90 minutes</option>
+                    <option value="180">180 minutes</option>
+                    <option value="custom">Custom time</option>
+                  </select>
+                </div>
+                <div class="field conditional-field" id="custom-time-wrap" hidden>
+                  <label for="custom-time">Custom minutes</label>
+                  <input id="custom-time" name="customTime" type="number" min="0.01" step="0.01" inputmode="decimal">
+                </div>
+              </div>
+              <div class="check-grid">
+                <label class="check-card"><input id="randomize-questions" type="checkbox" checked><span><strong>Randomize selected questions</strong><small>Shuffle the eligible pool before choosing questions</small></span></label>
+                <label class="check-card"><input id="balanced-distribution" type="checkbox"><span><strong>Distribute evenly across units</strong><small>Redistribute shortages to units with capacity</small></span></label>
+                <label class="check-card"><input id="shuffle-options" type="checkbox"><span><strong>Shuffle answer choices</strong><small>Correct-answer mapping stays intact</small></span></label>
+                <label class="check-card"><input id="confirm-submit" type="checkbox" checked><span><strong>Confirm final submission</strong><small>Review totals before finishing</small></span></label>
+                <label class="check-card"><input id="allow-review" type="checkbox" checked><span><strong>Allow marks for review</strong><small>Flag questions to revisit</small></span></label>
+                <label class="check-card"><input id="unanswered-warning" type="checkbox" checked><span><strong>Warn about unanswered</strong><small>See what is incomplete before submitting</small></span></label>
+                <label class="check-card"><input id="include-retired" type="checkbox"><span><strong>Include retired questions</strong><small>Normally excluded unless using retired review</small></span></label>
+                <label class="check-card"><input id="include-mastered" type="checkbox" checked><span><strong>Include mastered questions</strong><small>Turn off for learning-only practice</small></span></label>
+                <label class="check-card"><input id="auto-retire-mastered" type="checkbox"><span><strong>Retire newly mastered questions</strong><small>Applies your saved mastery threshold after submission</small></span></label>
+                <label class="check-card fast-removal-card"><input id="remove-fast-questions" type="checkbox" checked><span><strong>Delete answered questions under 30 seconds</strong><small>Removes them from the active bank after submission; result history keeps a full snapshot</small></span></label>
+              </div>
+            </fieldset>
+          </div>
+
+          <aside class="setup-summary panel" aria-labelledby="setup-summary-title">
+            <span class="eyebrow">Session summary</span>
+            <h2 id="setup-summary-title">Your exam at a glance</h2>
+            <dl id="settings-summary" class="summary-list"></dl>
+            <div id="settings-breakdown" class="settings-breakdown"></div>
+            <div id="setup-error" class="inline-error" role="alert" hidden></div>
+            <button class="button button-primary button-full" id="setup-start-button" type="submit">Start exam <span aria-hidden="true">→</span></button>
+            <button class="button button-quiet button-full" id="setup-cancel" type="button">Cancel</button>
+            <p class="summary-note">Your progress will be saved locally during the exam.</p>
+          </aside>
+        </div>
+      </form>
+    </section>
+
+    <section id="exam-screen" class="screen exam-screen" aria-labelledby="exam-screen-title" hidden>
+      <header class="exam-header">
+        <div class="exam-title-block">
+          <span class="eyebrow">Active session</span>
+          <h1 id="exam-screen-title">CMA Practice Exam</h1>
+        </div>
+        <div class="exam-metrics" aria-label="Exam progress and timing">
+          <div><span>Question</span><strong id="exam-position">1 of 1</strong></div>
+          <div class="metric-aux" hidden><span>Answered</span><strong id="exam-answered">0</strong></div>
+          <div class="metric-aux" hidden><span>Unanswered</span><strong id="exam-unanswered">1</strong></div>
+          <div><span>Flag status</span><strong id="exam-flag-status">Not flagged</strong><i hidden id="exam-marked">0</i></div>
+          <div id="overall-timer-card" class="timer-card"><span>Time remaining</span><strong id="overall-timer">00:00</strong></div>
+          <div class="timer-card secondary"><span>This question</span><strong id="question-timer">00:00</strong></div>
+        </div>
+      </header>
+
+      <div class="exam-layout">
+        <article class="question-panel">
+          <div class="question-meta">
+            <span id="question-section" class="meta-pill"></span>
+            <span id="question-unit"></span>
+          </div>
+          <p id="question-number-label" class="question-kicker">Question 1</p>
+          <h2 id="question-text">Question text</h2>
+          <fieldset class="answers-fieldset">
+            <legend class="visually-hidden">Select one answer</legend>
+            <div id="answer-options" class="answer-list"></div>
+          </fieldset>
+          <label class="guess-control"><input id="mark-guessed" type="checkbox"> I guessed this answer</label>
+          <div class="exam-control-row">
+            <div class="exam-control-group question-tools"><button class="button button-secondary" id="v2-pause-test" type="button">Pause Test</button><button class="button button-quiet" id="v2-note-question" type="button">Note</button><button class="button button-warning-quiet" id="mark-review" type="button">Flag for Review</button><button class="button button-quiet" id="clear-answer" type="button">Clear Answer</button><button class="button button-danger-quiet" id="v2-remove-question" type="button">Remove Question</button></div>
+            <div class="exam-control-group exam-navigation"><button class="button button-secondary" id="previous-question" type="button">Previous</button><button class="button button-primary" id="next-question" type="button">Next</button></div>
+          </div>
+        </article>
+
+        <aside class="navigator-panel" aria-labelledby="navigator-title">
+          <div class="navigator-heading">
+            <div>
+              <span class="eyebrow">Overview</span>
+              <h2 id="navigator-title">Question navigator</h2>
+            </div>
+            <button class="button button-danger-quiet" id="submit-exam" type="button">Submit exam</button>
+          </div>
+          <div id="question-navigator" class="question-navigator"></div>
+          <div class="navigator-legend" aria-label="Question state legend">
+            <span><i class="legend-box current"></i> Current</span>
+            <span><i class="legend-box answered"></i> Answered</span>
+            <span><i class="legend-box unanswered"></i> Unanswered</span>
+            <span><i class="legend-box marked"></i> Marked</span>
+            <span><i class="legend-box answered-marked"></i> Answered + marked</span>
+          </div>
+          <p class="keyboard-hint">Tip: use <kbd>←</kbd> and <kbd>→</kbd> to move between questions when focus is outside an answer.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="results-screen" class="screen" aria-labelledby="results-title" hidden>
+      <div class="results-hero">
+        <div>
+          <button class="back-button" id="results-home" type="button">← Dashboard</button>
+          <span id="results-reason" class="eyebrow">Exam complete</span>
+          <h1 id="results-title">Your results</h1>
+          <p id="results-subtitle"></p>
+        </div>
+        <div class="results-actions">
+          <button class="button button-secondary" id="results-retest" type="button">Retest incorrect</button>
+          <button class="button button-secondary" id="results-practice-weak" type="button">Practice weak units</button>
+          <button class="button button-secondary" id="results-history" type="button">Exam history</button>
+          <button class="button button-secondary" id="print-results" type="button">Print results</button>
+          <button class="button button-primary" id="results-new-exam" type="button">New exam</button>
+        </div>
+      </div>
+
+      <div id="score-cards" class="score-cards"></div>
+
+      <section class="panel results-section focus-summary-panel" aria-labelledby="results-focus-title">
+        <div class="section-heading">
+          <div><span class="eyebrow">Next study move</span><h2 id="results-focus-title">Strong and weak topics</h2></div>
+          <span id="results-fast-removal-badge" class="availability-chip">Fast cleanup</span>
+        </div>
+        <div id="results-focus-summary" class="focus-summary-grid"></div>
+        <p id="results-fast-removal-note" class="summary-note"></p>
+      </section>
+
+      <section class="panel results-section" aria-labelledby="time-analysis-title">
+        <div class="section-heading">
+          <div><span class="eyebrow">Pacing</span><h2 id="time-analysis-title">Time analysis</h2></div>
+        </div>
+        <div id="time-analysis" class="analysis-grid"></div>
+      </section>
+
+      <div class="performance-grid">
+        <section class="panel results-section" aria-labelledby="section-performance-title">
+          <div class="section-heading"><div><span class="eyebrow">Accuracy by area</span><h2 id="section-performance-title">Section performance</h2></div></div>
+          <div class="table-scroll"><table><thead><tr><th>Section</th><th>Total</th><th>Correct</th><th>Incorrect</th><th>Unanswered</th><th>Accuracy</th><th>Avg. time</th></tr></thead><tbody id="section-performance-body"></tbody></table></div>
+        </section>
+        <section class="panel results-section" aria-labelledby="unit-performance-title">
+          <div class="section-heading"><div><span class="eyebrow">Accuracy by section and unit</span><h2 id="unit-performance-title">Unit performance</h2></div></div>
+          <div class="table-scroll"><table><thead><tr><th>Section</th><th>Unit</th><th>Unit name</th><th>Total</th><th>Correct</th><th>Incorrect</th><th>Unanswered</th><th>Accuracy</th><th>Avg. time</th><th>Fastest</th><th>Slowest</th></tr></thead><tbody id="unit-performance-body"></tbody></table></div>
+        </section>
+      </div>
+
+      <section class="panel results-section" aria-labelledby="detail-table-title">
+        <div class="section-heading filter-heading">
+          <div><span class="eyebrow">Every response</span><h2 id="detail-table-title">Detailed result table</h2></div>
+          <div class="filter-controls">
+            <label>Status <select id="result-status-filter"><option value="all">All questions</option><option value="Correct">Correct</option><option value="Incorrect">Incorrect</option><option value="Unanswered">Unanswered</option><option value="marked">Marked for review</option></select></label>
+            <label>Section <select id="result-section-filter"><option value="all">All sections</option></select></label>
+            <label>Unit <select id="result-topic-filter"><option value="all">All units</option></select></label>
+          </div>
+        </div>
+        <div class="table-scroll"><table class="detail-table"><thead><tr><th><button class="sort-button" data-sort="number" type="button"># ↕</button></th><th>Question ID</th><th>Section</th><th>Unit or topic</th><th>Status</th><th>Your answer</th><th>Correct answer</th><th>Marked</th><th><button class="sort-button" data-sort="time" type="button">Time ↕</button></th></tr></thead><tbody id="result-detail-body"></tbody></table></div>
+        <p id="detail-empty" class="empty-row-message" hidden>No questions match these filters.</p>
+      </section>
+
+      <section class="panel results-section review-section" aria-labelledby="review-title">
+        <div class="section-heading filter-heading">
+          <div><span class="eyebrow">Answer review</span><h2 id="review-title">Learn from every question</h2></div>
+          <div class="filter-controls">
+            <label>Show <select id="review-filter"><option value="all">Review all</option><option value="Incorrect">Incorrect only</option><option value="Unanswered">Unanswered only</option><option value="marked">Marked for review only</option></select></label>
+            <label>Section <select id="review-section-filter"><option value="all">All sections</option></select></label>
+            <label>Unit <select id="review-unit-filter"><option value="all">All units</option></select></label>
+          </div>
+        </div>
+        <div id="review-list" class="review-list"></div>
+        <p id="review-empty" class="empty-row-message" hidden>No questions match this review filter.</p>
+      </section>
+    </section>
+
+    <section id="history-screen" class="screen" aria-labelledby="history-title" hidden>
+      <div class="page-heading">
+        <div>
+          <button class="back-button" id="history-back" type="button">← Dashboard</button>
+          <span class="eyebrow">Progress from individual question results</span>
+          <h1 id="history-title">Progress</h1>
+          <p>Track weighted accuracy, solving speed, sections, units, weekly activity, and mastery.</p>
+        </div>
+        <button class="button button-danger-quiet" id="clear-history" type="button">Clear all history</button>
+      </div>
+      <div id="history-storage-message" class="message message-warning" hidden></div>
+      <div class="subnav progress-tabs" role="tablist" aria-label="Progress views"><button id="progress-tab-attempts" data-progress-tab="attempts" role="tab" type="button">Attempts</button><button id="progress-tab-accuracy" data-progress-tab="accuracy" role="tab" type="button">Accuracy</button><button id="progress-tab-speed" data-progress-tab="speed" role="tab" type="button">Solving Speed</button><button id="progress-tab-sections" data-progress-tab="sections" role="tab" type="button">Sections</button><button id="progress-tab-units" data-progress-tab="units" role="tab" type="button">Units</button><button id="progress-tab-weekly" data-progress-tab="weekly" role="tab" type="button">Weekly</button><button id="progress-tab-mastery" data-progress-tab="mastery" role="tab" type="button">Mastery</button></div>
+      <section id="progress-overview" class="progress-overview" aria-labelledby="progress-overview-title"><div class="progress-toolbar"><div><h2 id="progress-overview-title">Trend comparison</h2><p>Accuracy excludes unanswered responses by default; unanswered remains visible separately.</p></div><div class="filter-controls"><label>Period <select id="progress-period"><option value="four-weeks">Latest 4 weeks vs previous 4</option><option value="this-week">This week vs previous week</option><option value="7-days">Last 7 days</option><option value="30-days">Last 30 days</option><option value="90-days">Last 90 days</option><option value="all-time">All time</option><option value="custom">Custom date range</option></select></label><label class="custom-period-field" hidden>From <input id="progress-custom-start" type="date"></label><label class="custom-period-field" hidden>To <input id="progress-custom-end" type="date"></label><label>Group graphs by <select id="progress-group"><option value="week">Week</option><option value="exam">Exam</option><option value="day">Day</option><option value="month">Month</option></select></label><label>Scope <select id="progress-scope-type"><option value="overall">Overall</option><option value="section">Section</option><option value="unit">Unit</option></select></label><label>Area <select id="progress-scope"><option value="all">All areas</option></select></label></div></div><div id="progress-summary-cards" class="dashboard-metric-grid"></div><p id="progress-summary-text" class="progress-summary-text"></p><div class="chart-grid"><figure class="trend-chart"><figcaption>Accuracy over time</figcaption><div id="accuracy-chart" class="chart-canvas"></div><p id="accuracy-chart-summary" class="visually-hidden"></p></figure><figure class="trend-chart"><figcaption>Average seconds per question</figcaption><div id="speed-chart" class="chart-canvas"></div><p id="speed-chart-summary" class="visually-hidden"></p></figure></div><section id="progress-comparison-panel" class="trend-chart comparison-panel" hidden><div class="section-heading"><div><h3>Compare areas</h3><p>Select up to five sections or units.</p></div><div class="filter-controls"><label>Areas <select id="progress-comparison" multiple size="3" aria-describedby="progress-comparison-help"></select></label><label>Metric <select id="progress-comparison-metric"><option value="accuracy">Accuracy</option><option value="averageSeconds">Average time</option></select></label></div></div><p id="progress-comparison-help" class="demo-note">Hold Ctrl or Command to select more than one area.</p><div id="progress-comparison-chart" class="chart-canvas"></div><p id="progress-comparison-summary" class="visually-hidden"></p></section></section>
+      <div id="progress-pane-attempts" data-progress-pane="attempts">
+      <section class="panel history-filter-panel" aria-labelledby="history-filter-title">
+        <div><span class="eyebrow">Find an attempt</span><h2 id="history-filter-title">Filter history</h2></div>
+        <div class="filter-controls history-filter-controls">
+          <label>Section <select id="history-section-filter"><option value="all">All sections</option></select></label>
+          <label>Unit <select id="history-unit-filter"><option value="all">All units</option></select></label>
+          <label>Exam date <input id="history-date-filter" type="date"></label><label>Mode <select id="history-mode-filter"><option value="all">All modes</option></select></label><label>Sort <select id="history-sort"><option value="date-desc">Newest</option><option value="date-asc">Oldest</option><option value="accuracy-desc">Highest accuracy</option><option value="time-asc">Fastest average</option><option value="accuracy-change-desc">Most improved accuracy</option><option value="speed-change-desc">Most improved speed</option></select></label>
+          <label>Minimum score % <input id="history-min-score" type="number" min="0" max="100" step="1" inputmode="numeric"></label>
+          <label>Maximum score % <input id="history-max-score" type="number" min="0" max="100" step="1" inputmode="numeric"></label>
+          <label>Minimum accuracy % <input id="history-min-accuracy" type="number" min="0" max="100" step="1" inputmode="numeric"></label>
+          <label>Maximum accuracy % <input id="history-max-accuracy" type="number" min="0" max="100" step="1" inputmode="numeric"></label>
+          <button class="button button-quiet" id="clear-history-filters" type="button">Clear filters</button>
+        </div>
+        <p id="history-filter-summary" class="demo-note"></p>
+      </section>
+      <div id="history-list" class="history-list"></div>
+      <div id="history-empty" class="empty-state" hidden>
+        <div class="empty-icon" aria-hidden="true">○</div>
+        <div><h2>No completed attempts yet</h2><p>Your submitted exams will appear here.</p></div>
+        <button class="button button-primary" id="history-start" type="button">Start an exam</button>
+      </div>
+      </div>
+      <section id="progress-pane-accuracy" data-progress-pane="accuracy" hidden><div class="panel"><h2>Accuracy trend</h2><p>Accuracy is correct ÷ (correct + incorrect). Unanswered responses are shown separately and do not enter this trend denominator.</p><div id="progress-accuracy-table" class="table-scroll"></div></div></section>
+      <section id="progress-pane-speed" data-progress-pane="speed" hidden><div class="panel"><h2>Solving-speed trend</h2><p>Positive improvement means faster. Times below zero, missing times, and values above ten minutes per question are excluded.</p><div id="progress-speed-table" class="table-scroll"></div></div></section>
+      <section id="progress-pane-sections" data-progress-pane="sections" hidden><div class="panel"><h2>Section performance</h2><div id="progress-section-table" class="table-scroll"></div></div></section>
+      <section id="progress-pane-units" data-progress-pane="units" hidden><div id="progress-unit-detail" class="panel" hidden><h2>Selected unit detail</h2><p>Use Scope: Unit and choose an area above to see unit-specific accuracy, speed, volume, mistakes, and mastery.</p><div id="progress-unit-detail-summary" class="analysis-grid"></div><figure class="trend-chart"><figcaption>Attempt volume over time</figcaption><div id="progress-unit-volume-chart" class="chart-canvas"></div><p id="progress-unit-volume-summary" class="visually-hidden"></p></figure></div><div class="panel"><h2>Unit performance</h2><div id="progress-unit-table" class="table-scroll"></div></div></section>
+      <section id="progress-pane-weekly" data-progress-pane="weekly" hidden><div class="panel"><h2>Weekly study summary</h2><div id="progress-weekly-summary"></div></div></section>
+      <section id="progress-pane-mastery" data-progress-pane="mastery" hidden><div class="panel"><h2>Mastery progress</h2><div id="progress-mastery-summary"></div></div></section>
+    </section>
+
+    <section id="bank-screen" class="screen" aria-labelledby="bank-title" hidden>
+      <div class="page-heading">
+        <div>
+          <button class="back-button" id="bank-back" type="button">← Dashboard</button>
+          <span class="eyebrow">Your study library</span>
+          <h1 id="bank-title">Question bank</h1>
+          <p>Import, paste, search, edit, and export a private CMA bank. Everything stays on this device.</p>
+        </div>
+        <div class="availability-chip"><strong id="bank-question-count">0</strong> valid questions</div>
+      </div>
+      <div class="subnav bank-tabs" aria-label="Question Bank tools"><button id="bank-tab-browse" type="button">Browse</button><button id="bank-tab-import" type="button">Import</button><button id="bank-tab-add" type="button">Add Manually</button><button id="bank-tab-syllabus" type="button">Sections &amp; Units</button><button id="bank-tab-retired" type="button">Retired</button><button id="bank-tab-unclassified" type="button">Unclassified</button><button id="bank-tab-duplicates" type="button">Duplicate Review</button><button id="bank-tab-export" type="button">Export</button><button id="bank-tab-backup" type="button">Bank Backup</button></div>
+
+      <div id="bank-storage-alert" class="message message-warning" hidden></div>
+      <div class="bank-stat-grid" aria-label="Question bank statistics">
+        <article class="bank-stat"><span>Total questions</span><strong id="bank-summary-count">0</strong></article>
+        <article class="bank-stat"><span>Active</span><strong id="bank-active-count">0</strong></article>
+        <article class="bank-stat"><span>Retired</span><strong id="bank-retired-count">0</strong></article>
+        <article class="bank-stat"><span>Sections represented</span><strong id="bank-section-count">0</strong></article>
+        <article class="bank-stat"><span>With explanations</span><strong id="bank-explained-count">0</strong></article>
+        <article class="bank-stat"><span>Without explanations</span><strong id="bank-missing-explanation-count">0</strong></article>
+        <article class="bank-stat"><span>Duplicate-ID warnings</span><strong id="bank-duplicate-count">0</strong></article>
+        <article class="bank-stat"><span>Invalid-question warnings</span><strong id="bank-invalid-count">0</strong></article>
+        <article class="bank-stat"><span>Classified</span><strong id="bank-classified-count">0</strong></article>
+        <article class="bank-stat"><span>Unclassified</span><strong id="bank-unclassified-count">0</strong></article>
+        <article class="bank-stat"><span>Mastered</span><strong id="bank-mastered-count">0</strong></article>
+        <article class="bank-stat"><span>Selected</span><strong id="bank-selected-count">0</strong></article>
+      </div>
+
+      <div class="bank-layout" data-bank-pane="import">
+        <section class="panel import-panel" aria-labelledby="import-title">
+          <span class="eyebrow">Add from a file</span>
+          <h2 id="import-title">Import JSON question bank</h2>
+          <p>Choose a normalized or older compatible <code>.json</code> bank. The file is checked first, then you decide whether to add its new questions or replace the entire bank.</p>
+          <label class="file-drop" for="bank-file">
+            <span class="file-icon" aria-hidden="true">JSON</span>
+            <strong>Choose a JSON file</strong>
+            <span id="selected-file-name">No file selected</span>
+            <input id="bank-file" type="file" accept=".json,application/json">
+          </label>
+          <div class="button-row">
+            <button class="button button-primary" id="add-bank-file" type="button" disabled>Add questions</button>
+            <button class="button button-danger-quiet" id="replace-bank-file" type="button" disabled>Replace entire bank</button>
+          </div>
+          <p class="field-help"><strong>Add questions</strong> keeps your current bank and skips incoming questions whose IDs already exist.</p>
+          <div id="import-status" class="message" role="status" aria-live="polite" hidden></div>
+          <div id="validation-errors" class="validation-errors" role="alert" hidden></div>
+          <button class="button button-secondary button-full" id="bank-guided-import" type="button">Open guided text importer</button>
+        </section>
+
+        <aside class="panel bank-summary" aria-labelledby="bank-summary-title">
+          <span class="eyebrow">Current bank</span>
+          <h2 id="bank-summary-title">Coverage summary</h2>
+          <dl class="summary-list">
+            <div><dt>Source</dt><dd id="bank-source">Demonstration bank</dd></div>
+            <div><dt>Sections</dt><dd id="bank-sections">—</dd></div>
+            <div><dt>Units</dt><dd id="bank-units">—</dd></div>
+            <div><dt>Estimated storage</dt><dd id="bank-storage-size">—</dd></div>
+          </dl>
+          <p class="demo-note">Browser storage has limits. Export a backup after substantial changes.</p>
+        </aside>
+      </div>
+
+      <section class="panel bulk-panel" data-bank-pane="import" aria-labelledby="bulk-title">
+        <div class="section-heading filter-heading">
+          <div><span class="eyebrow">Add many at once</span><h2 id="bulk-title">Bulk Add Questions</h2></div>
+          <label>Input format
+            <select id="bulk-input-mode">
+              <option value="json">Paste JSON</option>
+              <option value="text">Paste structured plain text</option>
+            </select>
+          </label>
+        </div>
+        <label class="field" for="bulk-input"><span>Questions to validate</span>
+          <textarea id="bulk-input" rows="15" spellcheck="false" placeholder="Paste a JSON array of questions here. Your text is preserved if validation fails."></textarea>
+        </label>
+        <div class="bulk-controls">
+          <button class="button button-secondary" id="validate-bulk" type="button">Validate questions</button>
+          <label>Existing IDs
+            <select id="bulk-duplicate-strategy">
+              <option value="skip">Skip duplicates</option>
+              <option value="replace">Replace existing questions</option>
+            </select>
+          </label>
+          <button class="button button-primary" id="add-bulk" type="button" disabled>Add to question bank</button>
+        </div>
+        <div id="bulk-processing" class="message" role="status" aria-live="polite" hidden></div>
+        <div id="bulk-validation-summary" class="bulk-validation-summary" hidden></div>
+        <div id="bulk-validation-errors" class="validation-errors" role="alert" hidden></div>
+        <div id="bulk-preview" class="bulk-preview" hidden></div>
+      </section>
+
+      <section class="panel structure-panel" data-bank-pane="catalog" aria-labelledby="structure-title">
+        <div><span class="eyebrow">Discovered automatically</span><h2 id="structure-title">Questions by section and unit</h2></div>
+        <div id="bank-structure" class="bank-structure"></div>
+      </section>
+
+      <section class="panel reference-panel" data-bank-pane="catalog" aria-labelledby="reference-title">
+        <div class="section-heading reference-heading">
+          <div>
+            <span class="eyebrow">From your supplied 2025 HOCK PDFs</span>
+            <h2 id="reference-title">Complete Section and Study Unit reference</h2>
+            <p>All 94 official Study Unit names are shown below. Loaded-question counts are displayed separately, including zero.</p>
+          </div>
+          <div class="button-row"><button class="button button-secondary" id="bank-edit-catalog" type="button">Edit sections &amp; units</button><button class="button button-primary" id="apply-reference-names" type="button">Apply 2025 names to current bank</button></div>
+        </div>
+        <div id="reference-name-status" class="message" role="status" aria-live="polite"></div>
+        <div id="reference-structure" class="reference-structure"></div>
+      </section>
+
+      <section class="panel question-manager" data-bank-pane="browse" aria-labelledby="question-manager-title">
+        <div class="section-heading filter-heading">
+          <div><span class="eyebrow">Search and maintain</span><h2 id="question-manager-title">Manage individual questions</h2></div>
+          <div class="filter-controls">
+            <label>Search <input id="bank-search" type="search" placeholder="ID, text, section, unit, or name"></label>
+            <label>Section <select id="bank-section-filter"><option value="all">All sections</option></select></label>
+            <label>Unit <select id="bank-unit-filter"><option value="all">All units</option></select></label>
+            <label>Difficulty <select id="bank-difficulty-filter"><option value="all">All</option><option value="Easy">Easy</option><option value="Medium">Medium</option><option value="Hard">Hard</option></select></label>
+            <label>Classification <select id="bank-classification-filter"><option value="all">All</option><option value="classified">Classified</option><option value="unclassified">Unclassified</option></select></label>
+            <label>Mastery <select id="bank-mastery-filter"><option value="all">All</option><option value="New">New</option><option value="Learning">Learning</option><option value="Unstable">Unstable</option><option value="Mastered">Mastered</option></select></label><label>Status <select id="bank-status-filter"><option value="all">Active and retired</option><option value="active">Active only</option><option value="retired">Retired only</option></select></label><label>Mistakes <select id="bank-mistake-filter"><option value="all">All</option><option value="has">Attempted incorrectly</option><option value="unresolved">Unresolved mistake</option></select></label><label>Unit notes <select id="bank-note-filter"><option value="all">All</option><option value="has">Has notes</option><option value="review">Needs review</option></select></label>
+          </div>
+        </div>
+        <div class="button-row"><button class="button button-secondary small-button" id="bank-select-filtered" type="button">Select filtered</button><button class="button button-secondary small-button" id="bank-clear-selection" type="button">Clear selection</button><button class="button button-secondary small-button" id="bank-bulk-classify" type="button">Move selected to review</button><button class="button button-danger-quiet small-button" id="bank-bulk-delete" type="button">Delete selected</button><span id="bank-selection-count" class="badge">0 selected</span></div>
+        <p id="bank-filter-summary" class="demo-note"></p>
+        <div class="table-scroll"><table class="question-manager-table"><thead><tr><th>Select</th><th>ID</th><th>Section</th><th>Unit</th><th>Difficulty</th><th>Classification</th><th>Mastery</th><th>Question</th><th>Explanation</th><th>Actions</th></tr></thead><tbody id="bank-question-list"></tbody></table></div>
+        <div class="pagination-row">
+          <button class="button button-secondary small-button" id="bank-previous-page" type="button">Previous page</button>
+          <span id="bank-page-status">Page 1 of 1</span>
+          <button class="button button-secondary small-button" id="bank-next-page" type="button">Next page</button>
+        </div>
+      </section>
+
+      <section class="panel bank-actions-panel" data-bank-pane="export" aria-labelledby="bank-actions-title">
+        <div><span class="eyebrow">Backup and templates</span><h2 id="bank-actions-title">Export or reset your bank</h2></div>
+        <details class="export-coverage">
+          <summary>Choose sections and units for scoped exports</summary>
+          <div class="export-coverage-grid">
+            <div><strong>Sections</strong><div id="bank-export-sections" class="coverage-list"></div></div>
+            <div><strong>Units</strong><div id="bank-export-units" class="coverage-list"></div></div>
+          </div>
+        </details>
+        <div class="bank-actions">
+          <button class="button button-primary" id="export-complete-bank" type="button">Export complete bank</button>
+          <button class="button button-secondary" id="export-section-bank" type="button">Export selected sections</button>
+          <button class="button button-secondary" id="export-unit-bank" type="button">Export selected units</button>
+          <button class="button button-secondary" id="export-filtered-bank" type="button">Export search results</button>
+          <button class="button button-secondary" id="download-template" type="button">Download JSON template</button>
+          <a class="button button-secondary" href="large-question-bank-template.json" download>Download large starter</a>
+          <button class="button button-secondary" id="download-bulk-template" type="button">Download plain-text template</button>
+          <button class="button button-secondary" id="restore-demo" type="button">Restore demonstration questions</button>
+          <button class="button button-danger-quiet" id="clear-bank" type="button">Clear question bank</button>
+        </div>
+      </section>
+
+      <section class="panel schema-panel" data-bank-pane="export" aria-labelledby="schema-title">
+        <span class="eyebrow">Normalized shape</span>
+        <h2 id="schema-title">Question format</h2>
+<pre><code>{
+  "version": 3,
+  "id": "B-U18-001",
+  "sectionId": "B",
+  "unitId": "B-U18",
+  "section": "B",
+  "sectionName": "Corporate Finance",
+  "unit": "Unit 18",
+  "unitName": "Forward and Future Contracts",
+  "question": "Which statement correctly describes a futures contract?",
+  "options": { "A": "...", "B": "...", "C": "...", "D": "..." },
+  "correctAnswer": "B",
+  "explanation": "Optional explanation",
+  "topic": "Futures contracts",
+  "tags": ["derivatives", "hedging"],
+  "difficulty": "Medium",
+  "source": "Personal notes"
+}</code></pre>
+      </section>
+    </section>
+
+    <section id="syllabus-screen" class="screen" aria-labelledby="syllabus-title" hidden>
+      <div class="page-heading">
+        <div><button class="back-button" id="syllabus-back" type="button">← Dashboard</button><span class="eyebrow">Permanent study structure</span><h1 id="syllabus-title">Sections &amp; Units</h1><p>Edit the catalog used by setup, imports, analytics, and history snapshots.</p></div>
+        <div class="button-row"><button class="button button-primary" id="syllabus-add-section" type="button">Add section</button><button class="button button-secondary" id="syllabus-add-unit" type="button">Add unit</button></div>
+      </div>
+      <div id="syllabus-stats" class="bank-stat-grid"></div>
+      <section class="panel">
+        <div class="section-heading"><div><span class="eyebrow">Editable hierarchy</span><h2>Catalog</h2></div><div class="button-row"><button class="button button-secondary" id="syllabus-export" type="button">Export catalog</button><label class="button button-secondary file-button">Restore catalog<input id="syllabus-file" type="file" accept=".json,application/json"></label></div></div>
+        <div id="syllabus-message" class="message" role="status" aria-live="polite" hidden></div>
+        <div id="syllabus-tree" class="syllabus-tree"></div>
+      </section>
+    </section>
+
+    <section id="import-screen" class="screen bank-subfeature-screen" aria-labelledby="text-import-title" hidden>
+      <div class="page-heading">
+        <div><button class="back-button" id="text-import-back" type="button">← Question Bank</button><span class="eyebrow">Question Bank · Import</span><h1 id="text-import-title">Import Questions</h1><p>Parse, validate, detect duplicates, classify, review, and approve before anything enters the bank.</p></div>
+        <div class="availability-chip"><strong id="import-queue-count">0</strong> in review</div>
+      </div>
+      <section class="panel">
+        <label class="field" for="text-import-input"><span>Question text</span><textarea id="text-import-input" rows="16" spellcheck="false" placeholder="1. Question text&#10;A. First option&#10;B. Second option&#10;C. Third option&#10;D. Fourth option&#10;Answer: B&#10;Explanation: Optional explanation"></textarea></label>
+        <div class="button-row"><button class="button button-primary" id="parse-text" type="button">Parse locally</button><button class="button button-secondary" id="classify-ai" type="button">Classify with AI</button><button class="button button-quiet" id="cancel-ai" type="button" disabled>Cancel AI request</button></div>
+        <label class="consent-row"><input id="ai-consent" type="checkbox"> I understand that question text will be sent to OpenAI only when I press “Classify with AI.”</label>
+        <div id="ai-import-status" class="message" role="status" aria-live="polite" hidden></div>
+        <progress id="ai-progress" max="100" value="0" hidden></progress>
+        <div id="parse-errors" class="validation-errors" role="alert" hidden></div>
+      </section>
+      <section class="panel">
+        <div class="section-heading filter-heading"><div><span class="eyebrow">Mandatory review queue</span><h2>Review before saving</h2></div><div class="filter-controls"><label>Status <select id="import-filter"><option value="all">All</option><option value="ready">Ready</option><option value="unclassified">Unclassified</option><option value="error">Has errors</option></select></label></div></div>
+        <div class="button-row"><button class="button button-secondary" id="approve-high" type="button">Approve high confidence</button><button class="button button-primary" id="save-approved" type="button">Save approved to bank</button><button class="button button-danger-quiet" id="clear-import-queue" type="button">Clear queue</button></div>
+        <div id="import-review-list" class="import-review-list"></div>
+      </section>
+    </section>
+
+    <section id="weak-screen" class="screen" aria-labelledby="weak-title" hidden>
+      <div class="page-heading"><div><button class="back-button" id="weak-back" type="button">← Dashboard</button><span class="eyebrow">Evidence-aware analytics</span><h1 id="weak-title">Weak Areas</h1><p>Prioritize recurring misses and slow answers without overreacting to tiny samples.</p></div></div>
+      <div id="weak-summary-cards" class="score-cards"></div>
+      <section class="panel">
+        <div class="section-heading filter-heading"><div><span class="eyebrow">Drill down</span><h2>Unit weakness</h2></div><div class="filter-controls"><label>Section <select id="weak-section-filter"><option value="all">All</option></select></label><label>Evidence <select id="weak-evidence-filter"><option value="all">All</option><option value="Insufficient">Insufficient</option><option value="Sufficient">Sufficient</option><option value="Established">Established</option></select></label><label>Trend <select id="weak-trend-filter"><option value="all">All</option><option value="Improving">Improving</option><option value="Stable">Stable</option><option value="Declining">Declining</option></select></label><label>Sort <select id="weak-sort"><option value="weakness">Weakest first</option><option value="accuracy">Lowest accuracy</option><option value="attempts">Most attempts</option></select></label></div></div>
+        <div class="table-scroll"><table><thead><tr><th>Use</th><th>Section / unit</th><th>Attempts</th><th>Accuracy</th><th>Avg. time</th><th>Repeated errors</th><th>Evidence</th><th>Trend</th><th>Weakness</th></tr></thead><tbody id="weak-unit-table"></tbody></table></div>
+        <p id="weak-empty" class="empty-row-message" hidden>No completed question history is available yet.</p>
+      </section>
+      <section class="panel">
+        <div class="section-heading"><div><span class="eyebrow">Adaptive selection</span><h2>Create a weak-area practice exam</h2></div></div>
+        <form id="weak-form" class="settings-grid">
+          <label>Weakness threshold <input id="weak-threshold" type="number" min="0" max="1" step="0.05" value="0.35"></label><label>Minimum attempts <input id="weak-practice-min-attempts" type="number" min="0" max="100" value="1"></label><label>Question count <input id="weak-count" type="number" min="1" max="500" value="15"></label><label>Time in minutes <input id="weak-time" type="number" min="1" max="600" value="25"></label>
+          <label class="consent-row"><input id="weak-include-new" type="checkbox" checked> Include new questions</label><label class="consent-row"><input id="weak-include-mastered" type="checkbox"> Include mastered questions</label><label class="consent-row"><input id="weak-prioritize-recent" type="checkbox" checked> Prioritize recent mistakes</label><label class="consent-row"><input id="weak-balance" type="checkbox" checked> Balance selected units</label><label class="consent-row"><input id="weak-random" type="checkbox" checked> Randomize questions</label><label class="consent-row"><input id="weak-shuffle" type="checkbox" checked> Shuffle choices</label>
+          <button class="button button-primary" type="submit">Start weak-area exam</button>
+        </form>
+        <details><summary>How weakness is calculated</summary><p id="weakness-formula" class="formula-note"></p></details>
+      </section>
+      <section class="panel"><div class="section-heading"><div><span class="eyebrow">Question-level memory</span><h2>Mastery</h2></div></div><div class="table-scroll"><table><thead><tr><th>Question</th><th>Unit</th><th>State</th><th>Correct streak</th><th>Attempts</th></tr></thead><tbody id="mastery-table"></tbody></table></div></section>
+    </section>
+
+    <section id="study-screen" class="screen" aria-labelledby="study-title" hidden>
+      <div class="page-heading"><div><button class="back-button" id="study-back" type="button">← Dashboard</button><span class="eyebrow">Notes, summaries, and revision</span><h1 id="study-title">Study</h1><p>Keep local unit summaries, notes, formula notes, revision checklists, and mistake resolutions.</p></div></div>
+      <div class="subnav study-tabs" role="tablist" aria-label="Study tools"><button data-study-tab="summaries" type="button">Unit Summaries</button><button data-study-tab="notes" type="button">Unit Notes</button><button data-study-tab="mistakes" type="button">Mistake Log</button><button data-study-tab="formulas" type="button">Formula Notes</button><button data-study-tab="checklist" type="button">Revision Checklist</button><button data-study-tab="due" type="button">Due for Review</button></div>
+      <div class="study-toolbar"><label>Unit <select id="study-unit"></select></label><span id="study-save-status" role="status" aria-live="polite"></span></div>
+      <section data-study-pane="summaries" class="panel"><h2>Unit summary</h2><label class="field" for="study-summary"><span>Concise summary</span><textarea id="study-summary" rows="12" placeholder="Write the core ideas, formulas, and decision rules for this unit."></textarea></label><button class="button button-primary" id="save-study-summary" type="button">Save summary</button></section>
+      <section data-study-pane="notes" class="panel" hidden><h2>Unit notes</h2><label class="field" for="study-notes"><span>Personal notes</span><textarea id="study-notes" rows="14" placeholder="Add examples, reminders, and items to revisit."></textarea></label><label class="consent-row"><input id="study-note-needs-review" type="checkbox"> Mark these notes for review</label><button class="button button-primary" id="save-study-notes" type="button">Save notes</button></section>
+      <section data-study-pane="mistakes" class="panel" hidden><h2>Unit mistake log</h2><p>Incorrect historical responses appear automatically. Mark an item resolved after reviewing the explanation.</p><div id="study-mistake-list"></div></section>
+      <section data-study-pane="formulas" class="panel" hidden><h2>Formula notes</h2><label class="field" for="study-formula-notes"><span>Your formula sheet</span><textarea id="study-formula-notes" rows="16" placeholder="Record formulas and decision rules in your own words."></textarea></label><button class="button button-primary" id="save-formula-notes" type="button">Save formula notes</button></section>
+      <section data-study-pane="checklist" class="panel" hidden><h2>Revision checklist</h2><div id="study-checklist"></div><div class="button-row"><input id="study-checklist-new" type="text" placeholder="Add a revision item"><button class="button button-secondary" id="add-study-checklist" type="button">Add item</button></div></section>
+      <section data-study-pane="due" class="panel" hidden><h2>Questions due for mastery review</h2><div id="study-due-list"></div><button class="button button-primary" id="study-start-due" type="button">Start due-review exam</button></section>
+    </section>
+
+    <section id="exam-center-screen" class="screen" aria-labelledby="exam-center-title" hidden>
+      <div class="page-heading">
+        <div><button class="back-button" id="exam-center-back" type="button">← Dashboard</button><span class="eyebrow">All test modes in one place</span><h1 id="exam-center-title">Exam Center</h1><p>Choose a mode, then configure sections, units, question count, timing, and behavior.</p></div>
+        <div class="availability-chip"><strong id="exam-center-case-count">0</strong>&nbsp;case sets</div>
+      </div>
+
+      <div id="case-resume-banner" class="resume-banner" hidden>
+        <div><span class="eyebrow">Saved simulation</span><h2 id="case-resume-title">Continue your session</h2><p id="case-resume-details"></p></div>
+        <div class="button-row"><button class="button button-primary" id="case-resume" type="button">Resume</button><button class="button button-quiet" id="case-discard" type="button">Discard</button></div>
+      </div>
+      <div id="standard-resume-banner" class="resume-banner compact-resume" hidden><div><span class="eyebrow">Active MCQ exam</span><h2 id="standard-resume-title">Continue exam</h2><p id="standard-resume-details"></p></div><button class="button button-primary" id="standard-resume" type="button">Resume</button></div>
+
+      <div class="subnav exam-center-tabs" role="tablist" aria-label="Exam Center areas">
+        <button data-exam-center-tab="practice" role="tab" type="button">Practice tests</button>
+        <button data-exam-center-tab="simulations" role="tab" type="button">Four-hour &amp; cases</button>
+        <button data-exam-center-tab="case-bank" role="tab" type="button">Case bank</button>
+        <button data-exam-center-tab="resources" role="tab" type="button">Formula board</button>
+      </div>
+
+      <section class="exam-mode-stage" data-exam-center-pane="practice" aria-labelledby="exam-mode-stage-title"><div class="compact-section-heading"><div><h2 id="exam-mode-stage-title">Choose exam mode</h2><p>Available counts update from your bank and saved performance.</p></div></div><div id="exam-mode-grid" class="exam-mode-selection-grid">
+        <article><h3>Standard Custom Test</h3><p>Choose any active sections, units, count, and time.</p><span><strong data-mode-count="standard">0</strong> available</span><button data-exam-mode="standard" type="button">Select</button></article>
+        <article><h3>Weak Areas Only</h3><p>Questions from units with the highest weakness scores.</p><span><strong data-mode-count="weak">0</strong> available</span><button data-exam-mode="weak" type="button">Select</button></article>
+        <article><h3>Strong Areas Only</h3><p>Verify retention in established strong units.</p><span><strong data-mode-count="strong">0</strong> available</span><button data-exam-mode="strong" type="button">Select</button></article>
+        <article><h3>Mixed Strong and Weak</h3><p>Combine repair work with confidence questions.</p><span><strong data-mode-count="mixed">0</strong> available</span><button data-exam-mode="mixed" type="button">Select</button></article>
+        <article><h3>Previously Incorrect</h3><p>Retest questions previously answered incorrectly.</p><span><strong data-mode-count="incorrect">0</strong> available</span><button data-exam-mode="incorrect" type="button">Select</button></article>
+        <article><h3>Unanswered Questions</h3><p>Return to questions left unanswered in prior exams.</p><span><strong data-mode-count="unanswered">0</strong> available</span><button data-exam-mode="unanswered" type="button">Select</button></article>
+        <article><h3>Slow Questions</h3><p>Practice questions above your target solving time.</p><span><strong data-mode-count="slow">0</strong> available</span><button data-exam-mode="slow" type="button">Select</button></article>
+        <article><h3>Guessed Questions</h3><p>Review questions recorded as guessed in saved results.</p><span><strong data-mode-count="guessed">0</strong> available</span><button data-exam-mode="guessed" type="button">Select</button></article>
+        <article><h3>Flagged for Review</h3><p>Revisit questions previously flagged for review.</p><span><strong data-mode-count="marked">0</strong> available</span><button data-exam-mode="marked" type="button">Select</button></article>
+        <article><h3>Retired Questions Review</h3><p>Audit automatically or manually retired questions.</p><span><strong data-mode-count="retired">0</strong> available</span><button data-exam-mode="retired" type="button">Select</button></article>
+        <article><h3>Due Mastery Review</h3><p>Strengthen attempted questions that are not mastered.</p><span><strong data-mode-count="due">0</strong> available</span><button data-exam-mode="due" type="button">Select</button></article>
+        <article><h3>New Questions Only</h3><p>Use questions with no recorded graded attempt.</p><span><strong data-mode-count="new">0</strong> available</span><button data-exam-mode="new" type="button">Select</button></article>
+      </div></section>
+
+      <div id="exam-readiness-cards" class="score-cards exam-center-stats" data-exam-center-pane="simulations"></div>
+
+      <div class="exam-center-grid" data-exam-center-pane="simulations">
+        <article class="panel exam-mode-card full-mode-card">
+          <span class="eyebrow">Strict exam-day pattern</span>
+          <h2>Full four-hour simulation</h2>
+          <p>Three hours for exactly 100 MCQs, followed—only after reaching the 50% gateway—by two case sets in one hour. MCQs follow the official Part 2 section weights.</p>
+          <div class="phase-flow" aria-label="Full exam phases"><span><strong>180 min</strong>100 MCQs</span><i aria-hidden="true">→</i><span><strong>50%</strong>Gateway</span><i aria-hidden="true">→</i><span><strong>60 min</strong>2 case sets</span></div>
+          <div id="full-exam-requirements" class="requirement-list"></div>
+          <button class="button button-primary button-full" id="start-full-cma-exam" type="button">Start four-hour simulation</button>
+          <p class="summary-note">The combined 75% MCQ / 25% CBQ score is an unofficial practice estimate, not an IMA scaled score.</p>
+        </article>
+
+        <article class="panel exam-mode-card">
+          <span class="eyebrow">Focused application practice</span>
+          <h2>Independent case practice</h2>
+          <p>Work on one or two complete business scenarios without first completing the MCQ section.</p>
+          <div class="field"><label for="case-practice-selection">Case selection</label><select id="case-practice-selection"><option value="random-one">One random case · 30 minutes</option><option value="random-two">Two random cases · 60 minutes</option></select></div>
+          <label class="consent-row"><input id="case-practice-review" type="checkbox" checked> Show explanations and model calculations after submission</label>
+          <button class="button button-primary button-full" id="start-case-practice" type="button">Start case practice</button>
+        </article>
+      </div>
+
+      <section class="panel custom-four-hour-panel" data-exam-center-pane="simulations" aria-labelledby="custom-four-hour-title">
+        <div class="section-heading">
+          <div><span class="eyebrow">Your coverage · Same four-hour timing</span><h2 id="custom-four-hour-title">Custom 4-Hour Simulation</h2><p>Choose sections and units just like a normal practice exam. The session still uses 100 MCQs in three hours, the 50% gateway, and two case sets in one hour.</p></div>
+          <span class="badge unclassified">Custom — not official blueprint</span>
+        </div>
+        <div class="custom-coverage-grid">
+          <div class="custom-coverage-column">
+            <div class="coverage-column-heading"><h3>Sections</h3><div class="button-row"><button class="text-button" id="custom-select-all-sections" type="button">Select all</button><button class="text-button danger-text" id="custom-clear-sections" type="button">Clear</button></div></div>
+            <div id="custom-coverage-sections" class="coverage-list" aria-label="Custom simulation sections"></div>
+          </div>
+          <div class="custom-coverage-column">
+            <div class="coverage-column-heading"><h3>Units in selected sections</h3><div class="button-row"><button class="text-button" id="custom-select-all-units" type="button">Select all</button><button class="text-button danger-text" id="custom-clear-units" type="button">Clear</button></div></div>
+            <div id="custom-coverage-units" class="coverage-units custom-unit-list" aria-label="Custom simulation units"></div>
+          </div>
+        </div>
+        <div class="custom-exam-options">
+          <label class="check-card"><input id="custom-balance-units" type="checkbox" checked><span><strong>Balance MCQs across selected units</strong><small>Redistribute shortages while keeping every question inside your chosen coverage</small></span></label>
+          <label class="check-card"><input id="custom-match-cases" type="checkbox" checked><span><strong>Use case sets matching selected sections</strong><small>Turn this off if fewer than two matching cases are available</small></span></label>
+        </div>
+        <div id="custom-full-status" class="eligible-message" role="status" aria-live="polite"></div>
+        <div id="custom-full-breakdown" class="settings-breakdown"></div>
+        <button class="button button-primary" id="start-custom-full-exam" type="button">Start custom four-hour simulation</button>
+        <p class="summary-note">Results remain separate from the strict official-blueprint simulation and are clearly marked as custom practice.</p>
+      </section>
+
+      <section class="panel blueprint-panel" data-exam-center-pane="simulations" aria-labelledby="blueprint-title">
+        <div class="section-heading"><div><span class="eyebrow">Bank readiness</span><h2 id="blueprint-title">Official Part 2 blueprint coverage</h2><p>Your strict simulation draws the exact number shown from every section.</p></div></div>
+        <div class="table-scroll"><table><thead><tr><th>Section</th><th>Exam weight</th><th>Needed</th><th>Available</th><th>Status</th></tr></thead><tbody id="blueprint-table-body"></tbody></table></div>
+      </section>
+
+      <section class="panel case-bank-panel" data-exam-center-pane="case-bank" aria-labelledby="case-bank-title">
+        <div class="section-heading filter-heading"><div><span class="eyebrow">Reusable local scenarios</span><h2 id="case-bank-title">Case bank</h2><p>Import your own case sets or use the included software demonstrations.</p></div><div class="button-row"><button class="button button-secondary" id="export-case-bank" type="button">Export cases</button><label class="button button-secondary file-button">Import case JSON<input id="case-bank-file" type="file" accept=".json,application/json"></label><button class="button button-quiet" id="restore-demo-cases" type="button">Restore demonstrations</button></div></div>
+        <div id="case-bank-message" class="message" role="status" aria-live="polite" hidden></div>
+        <div id="case-bank-list" class="case-bank-list"></div>
+        <details class="case-import-details"><summary>Paste case JSON</summary><p class="summary-note">Accepts an array or an object with a <code>cases</code> array. Existing IDs are replaced after validation.</p><textarea id="case-json-input" rows="12" spellcheck="false" placeholder="Paste case JSON here"></textarea><div class="button-row"><button class="button button-primary" id="import-case-json" type="button">Validate and import</button><a class="button button-secondary" href="case-bank-template.json" download>Download template</a></div></details>
+      </section>
+
+      <section class="panel" data-exam-center-pane="case-bank" aria-labelledby="simulation-history-title">
+        <div class="section-heading"><div><span class="eyebrow">Evidence over time</span><h2 id="simulation-history-title">Case and full-test history</h2></div><button class="button button-danger-quiet" id="clear-case-history" type="button">Clear this history</button></div>
+        <div id="case-history-list" class="case-history-list"></div>
+      </section>
+
+      <section class="panel study-tool-panel" data-exam-center-pane="resources" aria-labelledby="study-tool-title">
+        <div class="section-heading"><div><span class="eyebrow">High-frequency review</span><h2 id="study-tool-title">Part 2 formula &amp; decision board</h2><p>Use this as a rapid recall checklist; confirm detailed rules in your study materials.</p></div><label class="formula-search">Find <input id="formula-search" type="search" placeholder="NPV, WACC, ratios, ethics…"></label></div>
+        <div id="formula-board" class="formula-board"></div>
+      </section>
+    </section>
+
+    <section id="case-exam-screen" class="screen case-exam-screen" aria-labelledby="case-exam-title" hidden>
+      <header class="case-exam-header">
+        <div><span id="case-exam-phase" class="eyebrow">Case practice</span><h1 id="case-exam-title">CMA simulation</h1></div>
+        <div class="case-exam-metrics"><div><span>Progress</span><strong id="case-exam-progress">1 of 1</strong></div><div id="case-overall-timer-card" class="timer-card"><span>Phase time remaining</span><strong id="case-overall-timer">00:00:00</strong></div><button class="button button-danger-quiet" id="case-exam-submit" type="button">Submit phase</button></div>
+      </header>
+
+      <div id="full-mcq-pane" class="case-exam-layout" hidden>
+        <article class="question-panel"><div class="question-meta"><span id="full-mcq-section" class="meta-pill"></span><span id="full-mcq-unit"></span></div><p id="full-mcq-number" class="question-kicker"></p><h2 id="full-mcq-text"></h2><fieldset class="answers-fieldset"><legend class="visually-hidden">Select one answer</legend><div id="full-mcq-options" class="answer-list"></div></fieldset><div class="exam-control-row"><div class="exam-control-group question-tools"><button class="button button-warning-quiet" id="full-mcq-mark" type="button">Flag for Review</button><button class="button button-quiet" id="full-mcq-clear" type="button">Clear Answer</button></div><div class="exam-control-group exam-navigation"><button class="button button-secondary" id="full-mcq-previous" type="button">Previous</button><button class="button button-primary" id="full-mcq-next" type="button">Next</button></div></div></article>
+        <aside class="navigator-panel"><div class="navigator-heading"><div><span class="eyebrow">MCQ section</span><h2>Question navigator</h2></div></div><div id="full-mcq-navigator" class="question-navigator"></div><div class="navigator-legend"><span><i class="legend-box current"></i> Current</span><span><i class="legend-box answered"></i> Answered</span><span><i class="legend-box marked"></i> Marked</span></div><p class="keyboard-hint">You cannot return to MCQs after submitting this phase.</p></aside>
+      </div>
+
+      <div id="cbq-pane" class="cbq-layout" hidden>
+        <article class="panel cbq-case-material"><div class="question-meta"><span id="cbq-section" class="meta-pill">Case set</span><span id="cbq-difficulty"></span></div><p id="cbq-number" class="question-kicker"></p><h2 id="cbq-title"></h2><div id="cbq-scenario" class="cbq-scenario"></div><div id="cbq-exhibits" class="cbq-exhibits"></div></article>
+        <article class="panel cbq-response-panel"><div id="cbq-items" class="cbq-items"></div><div class="exam-navigation"><button class="button button-secondary" id="cbq-previous" type="button">← Previous case</button><button class="button button-primary" id="cbq-next" type="button">Next case →</button></div><div id="cbq-navigator" class="case-set-navigator"></div></article>
+      </div>
+    </section>
+
+    <section id="case-results-screen" class="screen" aria-labelledby="case-results-title" hidden>
+      <div class="results-hero"><div><button class="back-button" id="case-results-home" type="button">← Dashboard</button><span id="case-results-reason" class="eyebrow">Simulation complete</span><h1 id="case-results-title">Your CMA practice result</h1><p id="case-results-subtitle"></p></div><div class="results-actions"><button class="button button-secondary" id="case-results-retest-mcq" type="button" hidden>Retest missed MCQs</button><button class="button button-secondary" id="case-results-center" type="button">Exam Center</button><button class="button button-secondary" id="case-results-print" type="button">Print result</button><button class="button button-primary" id="case-results-again" type="button">Practice another case</button></div></div>
+      <div id="case-result-score-cards" class="score-cards"></div>
+      <section id="case-gateway-panel" class="panel gateway-panel" hidden></section>
+      <section class="panel results-section"><div class="section-heading"><div><span class="eyebrow">Phase performance</span><h2>MCQ and case breakdown</h2></div></div><div id="case-result-breakdown" class="analysis-grid"></div></section>
+      <section id="full-mcq-review-panel" class="panel results-section" hidden><div class="section-heading filter-heading"><div><span class="eyebrow">Targeted correction</span><h2>Full-simulation MCQ review</h2></div><label>Show <select id="full-mcq-review-filter"><option value="missed">Incorrect &amp; unanswered</option><option value="marked">Marked for review</option><option value="all">All 100 questions</option><option value="correct">Correct only</option></select></label></div><div id="full-mcq-result-review" class="case-result-review"></div></section>
+      <section class="panel results-section"><div class="section-heading"><div><span class="eyebrow">Case review</span><h2>Responses, answers, and explanations</h2></div></div><div id="case-result-review" class="case-result-review"></div></section>
+    </section>
+
+    <section id="settings-screen" class="screen" aria-labelledby="settings-title" hidden>
+      <div class="page-heading"><div><button class="back-button" id="settings-back" type="button">← Dashboard</button><span class="eyebrow">Local preferences</span><h1 id="settings-title">Settings &amp; Backup</h1><p>The API key belongs only in the local <code>.env</code> file and is never stored in this browser.</p></div></div>
+      <section class="panel"><div class="section-heading"><div><span class="eyebrow">Large local capacity</span><h2>Storage</h2></div><span id="storage-backend" class="availability-chip">Checking…</span></div><div class="analysis-grid"><div class="analysis-item"><span>Currently used</span><strong id="storage-usage">—</strong></div><div class="analysis-item"><span>Available quota</span><strong id="storage-quota">—</strong></div><div class="analysis-item"><span>Questions stored</span><strong id="storage-question-count">0</strong></div><div class="analysis-item"><span>Automatic migrations</span><strong id="storage-migration-count">0</strong></div></div><progress id="storage-progress" max="100" value="0"></progress><p id="storage-description" class="demo-note">IndexedDB keeps large banks on this device.</p><button class="button button-secondary" id="refresh-storage" type="button">Refresh storage details</button></section>
+      <section class="panel"><div class="section-heading"><div><span class="eyebrow">Optional AI helper</span><h2>OpenAI classification</h2></div><span id="ai-configured" class="availability-chip">Checking local server…</span></div><div class="settings-grid"><label class="consent-row"><input id="ai-enabled" type="checkbox"> Enable AI controls</label><label>Model <input id="ai-model" type="text" readonly></label><label>Batch size <input id="ai-batch-size" type="number" min="1" max="50"></label><label>Timeout (ms) <input id="ai-timeout" type="number" min="5000" max="120000" step="1000"></label></div><div class="button-row"><button class="button button-secondary" id="test-ai" type="button">Test AI connection</button><a class="button button-quiet" href="INSTALL-PWA.md" target="_blank">PWA install guide</a></div><div id="ai-test-status" class="message" hidden></div></section>
+      <section class="panel"><div class="section-heading"><div><span class="eyebrow">Analytics and review thresholds</span><h2>Practice behavior</h2></div></div><div class="settings-grid"><label>Appearance <select id="settings-theme"><option value="light">Light</option><option value="dark">Dark</option></select></label><label>Target seconds per question <input id="target-time" type="number" min="10" max="600"></label><label>Sufficient evidence attempts <input id="sufficient-attempts" type="number" min="1" max="100"></label><label>Established evidence attempts <input id="established-attempts" type="number" min="2" max="200"></label><label>Trend threshold points <input id="trend-threshold" type="number" min="1" max="50"></label><label>Mastery correct streak <input id="mastery-threshold" type="number" min="1" max="20"></label><label class="consent-row"><input id="default-remove-fast" type="checkbox" checked> Delete answered questions recorded under 30 seconds</label><label class="consent-row"><input id="default-auto-retire" type="checkbox"> Retire questions automatically when mastered</label><label class="consent-row"><input id="accuracy-unanswered-incorrect" type="checkbox"> Include unanswered as incorrect in optional accuracy views</label><label class="consent-row"><input id="v2-allow-pause-exam" type="checkbox" checked> Allow pausing during Exam Mode</label><label class="consent-row"><input id="v2-allow-notes-exam" type="checkbox" checked> Allow notes during Exam Mode</label><label class="consent-row"><input id="v2-hidden-study-pause" type="checkbox" checked> Auto-pause Study Mode when the app is hidden</label><label class="consent-row"><input id="v2-hidden-exam-pause" type="checkbox"> Auto-pause strict Exam Mode when the app is hidden</label><label>V2 mastery consecutive correct attempts <input id="v2-mastery-correct" type="number" min="1" max="10" value="2"></label><label>V2 recent accuracy threshold % <input id="v2-mastery-accuracy" type="number" min="0" max="100" value="70"></label><label class="field-wide">Current study-focus reminders<textarea id="v2-focus-preset" rows="4" placeholder="One focus area per line"></textarea></label></div><p class="summary-note">Fast deletion applies to normal practice, targeted retests, and the 100-MCQ phase of four-hour simulations. Deleted questions remain readable in completed result history.</p><button class="button button-primary" id="save-settings" type="button">Save settings</button></section>
+      <section class="panel"><div class="section-heading"><div><span class="eyebrow">Safe interface migration</span><h2>Application data version</h2></div><span id="app-migration-version" class="availability-chip">Version 1</span></div><p id="app-migration-status">Checking navigation and study-data migration…</p></section>
+      <section class="panel"><div class="section-heading"><div><span class="eyebrow">Portable local data</span><h2>Full backup</h2></div></div><p>Includes the MCQ bank, case bank, editable catalog, both histories, settings, and review queue.</p><div class="button-row"><button class="button button-primary" id="export-full-backup" type="button">Export full backup</button><label class="button button-secondary file-button">Restore full backup<input id="backup-file" type="file" accept=".json,application/json"></label></div><div id="backup-status" class="message" hidden></div></section>
+    </section>
+  </main>
+
+  <dialog id="section-dialog" class="modal">
+    <form id="section-form" class="modal-card text-left-modal" novalidate>
+      <span class="eyebrow">Catalog editor</span><h2 id="section-dialog-title">Add section</h2>
+      <div class="field-grid"><div class="field"><label for="section-id">Stable ID</label><input id="section-id" maxlength="12" required></div><div class="field"><label for="section-name">Name</label><input id="section-name" maxlength="160" required></div></div>
+      <div class="field"><label for="section-description">Description</label><textarea id="section-description" rows="3"></textarea></div><label class="consent-row"><input id="section-active" type="checkbox" checked> Active in exam setup</label>
+      <div id="section-error" class="inline-error" hidden></div><div class="button-row modal-actions"><button class="button button-secondary" id="cancel-section" type="button">Cancel</button><button class="button button-primary" type="submit">Save section</button></div>
+    </form>
+  </dialog>
+  <dialog id="unit-dialog" class="modal wide-modal">
+    <form id="unit-form" class="modal-card text-left-modal" novalidate>
+      <span class="eyebrow">Catalog editor</span><h2 id="unit-dialog-title">Add unit</h2>
+      <div class="field-grid"><div class="field"><label for="unit-id">Stable ID</label><input id="unit-id" maxlength="60" required></div><div class="field"><label for="unit-section">Section</label><select id="unit-section"></select></div><div class="field"><label for="unit-code">Unit code</label><input id="unit-code" placeholder="Unit 18" required></div><div class="field"><label for="unit-number">Sort number</label><input id="unit-number" type="number" min="0" step="1"></div><div class="field"><label for="unit-name">Name</label><input id="unit-name" maxlength="200" required></div><div class="field"><label for="unit-aliases">Aliases, comma separated</label><input id="unit-aliases"></div></div>
+      <div class="field"><label for="unit-description">Description</label><textarea id="unit-description" rows="3"></textarea></div><div class="field"><label for="unit-keywords">Keywords, comma separated</label><textarea id="unit-keywords" rows="2"></textarea></div><label class="consent-row"><input id="unit-active" type="checkbox" checked> Active in exam setup</label>
+      <div id="unit-error" class="inline-error" hidden></div><div class="button-row modal-actions"><button class="button button-secondary" id="cancel-unit" type="button">Cancel</button><button class="button button-primary" type="submit">Save unit</button></div>
+    </form>
+  </dialog>
+  <dialog id="merge-dialog" class="modal">
+    <form id="merge-form" class="modal-card text-left-modal"><span class="eyebrow">Safe catalog change</span><h2>Merge or reassign</h2><p id="merge-impact"></p><input id="merge-source" type="hidden"><div class="field"><label for="merge-destination">Move questions to</label><select id="merge-destination"></select></div><div id="merge-error" class="inline-error" hidden></div><div class="button-row modal-actions"><button class="button button-secondary" id="cancel-merge" type="button">Cancel</button><button class="button button-danger" type="submit">Reassign and remove</button></div></form>
+  </dialog>
+
+  <dialog id="question-view-dialog" class="modal wide-modal">
+    <article class="modal-card text-left-modal">
+      <div class="section-heading">
+        <div><span class="eyebrow">Question details</span><h2 id="question-view-title">Question</h2></div>
+        <button class="icon-button" id="close-question-view" type="button" aria-label="Close question details">Close</button>
+      </div>
+      <p id="question-view-meta" class="demo-note"></p>
+      <p id="question-view-text" class="review-question"></p>
+      <div id="question-view-options" class="review-option-list"></div>
+      <div class="explanation-box"><strong>Explanation</strong><p id="question-view-explanation"></p></div>
+    </article>
+  </dialog>
+
+  <dialog id="question-edit-dialog" class="modal wide-modal">
+    <form id="question-edit-form" class="modal-card text-left-modal" novalidate>
+      <span class="eyebrow">Question editor</span>
+      <h2 id="question-edit-title">Edit question</h2>
+      <div class="field-grid">
+        <div class="field"><label for="edit-question-id">Unique ID</label><input id="edit-question-id" type="text" maxlength="100" required></div>
+        <div class="field"><label for="edit-question-section">Section</label><select id="edit-question-section"><option value="A">Section A</option><option value="B">Section B</option><option value="C">Section C</option><option value="D">Section D</option><option value="E">Section E</option><option value="F">Section F</option></select></div>
+        <div class="field"><label for="edit-question-section-name">Section name</label><input id="edit-question-section-name" type="text" maxlength="120"></div>
+        <div class="field"><label for="edit-question-unit">Unit</label><input id="edit-question-unit" type="text" maxlength="120" required></div>
+        <div class="field"><label for="edit-question-unit-name">Unit name</label><input id="edit-question-unit-name" type="text" maxlength="160"></div>
+        <div class="field"><label for="edit-question-answer">Correct answer</label><select id="edit-question-answer"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>
+      </div>
+      <div class="field"><label for="edit-question-text">Question text</label><textarea id="edit-question-text" rows="4" required></textarea></div>
+      <div class="field-grid option-edit-grid">
+        <div class="field"><label for="edit-option-a">Option A</label><textarea id="edit-option-a" rows="2" required></textarea></div>
+        <div class="field"><label for="edit-option-b">Option B</label><textarea id="edit-option-b" rows="2" required></textarea></div>
+        <div class="field"><label for="edit-option-c">Option C</label><textarea id="edit-option-c" rows="2" required></textarea></div>
+        <div class="field"><label for="edit-option-d">Option D</label><textarea id="edit-option-d" rows="2" required></textarea></div>
+      </div>
+      <div class="field"><label for="edit-question-explanation">Explanation</label><textarea id="edit-question-explanation" rows="3"></textarea></div>
+      <div id="question-edit-error" class="inline-error" role="alert" hidden></div>
+      <div class="button-row modal-actions">
+        <button class="button button-secondary" id="cancel-question-edit" type="button">Cancel</button>
+        <button class="button button-primary" type="submit">Save question</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="submit-dialog" class="modal">
+    <form method="dialog" class="modal-card">
+      <div class="modal-icon" aria-hidden="true">✓</div>
+      <span class="eyebrow">Final check</span>
+      <h2>Submit this exam?</h2>
+      <p id="submit-dialog-message"></p>
+      <dl class="submit-totals">
+        <div><dt>Answered</dt><dd id="submit-answered">0</dd></div>
+        <div><dt>Unanswered</dt><dd id="submit-unanswered">0</dd></div>
+        <div><dt>Marked</dt><dd id="submit-marked">0</dd></div>
+      </dl>
+      <div class="button-row modal-actions">
+        <button class="button button-secondary" id="return-to-exam" value="cancel" type="button">Return to exam</button>
+        <button class="button button-primary" id="confirm-final-submit" value="default" type="button">Submit exam</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="case-submit-dialog" class="modal">
+    <form method="dialog" class="modal-card">
+      <div class="modal-icon warning" aria-hidden="true">!</div>
+      <span class="eyebrow" id="case-submit-eyebrow">Phase review</span>
+      <h2 id="case-submit-title">Submit this phase?</h2>
+      <p id="case-submit-message"></p>
+      <dl class="submit-totals">
+        <div><dt>Answered</dt><dd id="case-submit-answered">0</dd></div>
+        <div><dt>Unanswered</dt><dd id="case-submit-unanswered">0</dd></div>
+        <div><dt>Flagged</dt><dd id="case-submit-marked">0</dd></div>
+      </dl>
+      <div class="button-row modal-actions">
+        <button class="button button-secondary" id="case-return-to-exam" type="button">Return to exam</button>
+        <button class="button button-primary" id="confirm-case-submit" type="button">Submit phase</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog" class="modal">
+    <form method="dialog" class="modal-card compact-modal">
+      <div class="modal-icon warning" aria-hidden="true">!</div>
+      <h2 id="confirm-dialog-title">Are you sure?</h2>
+      <p id="confirm-dialog-message"></p>
+      <div class="button-row modal-actions">
+        <button class="button button-secondary" id="confirm-dialog-cancel" value="cancel" type="button">Cancel</button>
+        <button class="button button-danger" id="confirm-dialog-accept" value="default" type="button">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+
+
+  <div id="v2-pause-overlay" class="v2-pause-overlay" role="dialog" aria-modal="true" hidden>
+    <div class="panel"><span class="eyebrow">Active session protected</span><h2>Test Paused</h2><p>Your answers and progress are saved. Paused time is excluded from response-time statistics.</p><button class="button button-primary" id="v2-resume-test" type="button">Resume Test</button></div>
+  </div>
+
+  <dialog id="v2-note-dialog" class="modal">
+    <form method="dialog" class="modal-card"><span class="eyebrow">Question note</span><h2>My Note</h2><p>Timer paused while writing your note.</p><textarea id="v2-note-text" rows="8" spellcheck="true"></textarea><label class="consent-row"><input id="v2-note-trap" type="checkbox"> Mark as conceptual trap / needs review</label><div class="button-row modal-actions"><button class="button button-danger-quiet" id="v2-delete-note" type="button">Delete</button><button class="button button-secondary" id="v2-cancel-note" type="button">Cancel</button><button class="button button-primary" id="v2-save-note" type="button">Save note</button></div></form>
+  </dialog>
+
+  <dialog id="easy-add-dialog" class="modal easy-add-dialog">
+    <form method="dialog" class="modal-card easy-add-card" id="easy-add-shell">
+      <div class="section-heading">
+        <div><span class="eyebrow">Simple question workspace</span><h2>Add Questions</h2><p>Add one question, import JSON, or paste a formatted set. The exact HOCK 2024-2025 unit names are applied automatically.</p></div>
+        <button class="icon-button" id="easy-add-close" type="button" aria-label="Close Add Questions">Close</button>
+      </div>
+      <div id="easy-add-message" class="message" role="status" aria-live="polite" hidden></div>
+      <div class="easy-add-topbar">
+        <label>Destination bank<select id="easy-add-bank"></select></label>
+        <label>Conflict handling<select id="easy-add-conflict"><option value="skip">Skip duplicate ID</option><option value="replace">Replace content and keep history</option><option value="new">Import as a new ID</option></select></label>
+        <div class="inline-create-bank"><input id="easy-new-bank-name" type="text" maxlength="80" placeholder="New bank name"><button class="button button-secondary" id="easy-create-bank" type="button">Create bank</button></div>
+      </div>
+      <div class="subnav easy-add-tabs" role="tablist" aria-label="Question add methods">
+        <button type="button" data-easy-tab="manual">Add one</button>
+        <button type="button" data-easy-tab="file">JSON file</button>
+        <button type="button" data-easy-tab="json">Paste JSON</button>
+        <button type="button" data-easy-tab="text">Paste questions</button>
+        <button type="button" data-easy-tab="catalog">Unit names</button>
+      </div>
+
+      <section class="easy-add-pane" data-easy-pane="manual">
+        <div class="settings-grid">
+          <label>Section<select id="easy-manual-section"></select></label>
+          <label>HOCK study unit<select id="easy-manual-unit"></select></label>
+          <label>Question ID<input id="easy-manual-id" type="text" placeholder="E-U03-001"></label>
+          <label>Correct answer<select id="easy-manual-answer"><option>A</option><option>B</option><option>C</option><option>D</option></select></label>
+        </div>
+        <label class="field"><span>Question</span><textarea id="easy-manual-question" rows="4" required></textarea></label>
+        <div class="option-edit-grid">
+          <label>Option A<textarea id="easy-manual-a" rows="2"></textarea></label><label>Option B<textarea id="easy-manual-b" rows="2"></textarea></label>
+          <label>Option C<textarea id="easy-manual-c" rows="2"></textarea></label><label>Option D<textarea id="easy-manual-d" rows="2"></textarea></label>
+        </div>
+        <label class="field"><span>Explanation</span><textarea id="easy-manual-explanation" rows="3"></textarea></label>
+        <div class="button-row"><button class="button button-primary" id="easy-save-manual" type="button">Save question</button><button class="button button-quiet" id="easy-clear-manual" type="button">Clear form</button></div>
+      </section>
+
+      <section class="easy-add-pane" data-easy-pane="file" hidden>
+        <label class="file-drop" for="easy-json-file"><span class="file-icon" aria-hidden="true">JSON</span><strong>Choose a question-bank JSON file</strong><span id="easy-json-file-name">No file selected</span><input id="easy-json-file" type="file" accept=".json,application/json"></label>
+        <div class="button-row"><button class="button button-primary" id="easy-import-file" type="button" disabled>Import file</button></div>
+      </section>
+
+      <section class="easy-add-pane" data-easy-pane="json" hidden>
+        <label class="field"><span>Paste import-ready JSON</span><textarea id="easy-json-text" rows="14" spellcheck="false" placeholder='{"title":"My Bank","questions":[...]}'></textarea></label>
+        <div class="button-row"><button class="button button-secondary" id="easy-preview-json" type="button">Validate JSON</button><button class="button button-primary" id="easy-import-json" type="button" disabled>Import validated JSON</button></div>
+      </section>
+
+      <section class="easy-add-pane" data-easy-pane="text" hidden>
+        <div class="settings-grid"><label>Use section when headings are missing<select id="easy-text-section"></select></label><label>Use unit when headings are missing<select id="easy-text-unit"></select></label></div>
+        <label class="field"><span>Paste questions</span><textarea id="easy-plain-text" rows="16" spellcheck="false" placeholder="1. Question text
+A. First option
+B. Second option
+C. Third option
+D. Fourth option
+Answer: B
+Explanation: Why B is correct"></textarea></label>
+        <p class="demo-note">Use exactly four options A–D. Separate questions with a blank line or start the next numbered question.</p>
+        <div class="button-row"><button class="button button-secondary" id="easy-preview-text" type="button">Parse questions</button><button class="button button-primary" id="easy-import-text" type="button" disabled>Import parsed questions</button></div>
+      </section>
+
+      <section class="easy-add-pane" data-easy-pane="catalog" hidden>
+        <div class="catalog-sync-card"><div><span class="eyebrow">Source of truth</span><h3>HOCK CMA Part 2 2024-2025</h3><p>94 study units across Sections A–F, transcribed from the two uploaded tables of contents. Syncing changes display names only and preserves question IDs, banks, attempts, notes, and history.</p></div><button class="button button-primary" id="easy-sync-catalog" type="button">Apply exact HOCK names</button></div>
+        <div id="easy-catalog-list" class="easy-catalog-list"></div>
+      </section>
+    </form>
+  </dialog>
+
+  <dialog id="install-help-dialog" class="modal">
+    <form method="dialog" class="modal-card compact-modal"><span class="eyebrow">Install on this device</span><h2>Add to Home Screen</h2><div id="install-help-content"></div><div class="button-row modal-actions"><button class="button button-primary" id="install-help-close" type="button">Done</button></div></form>
+  </dialog>
+
+  <noscript><div class="noscript-message">This simulator requires JavaScript. Please enable JavaScript and reopen the file.</div></noscript>
+  <script src="android-app.js?v=20260725.1"></script>
+  <script src="cma-2025-reference.js?v=20260722.4"></script>
+  <script src="cma-advanced.js?v=20260722.4"></script>
+  <script src="cma-storage.js?v=20260722.5"></script>
+  <script src="cma-progress.js?v=20260722.1"></script>
+  <script src="cma-v2.js?v=20260724.1"></script>
+  <script src="app.js?v=20260724.1"></script>
+  <script src="cma-case.js?v=20260722.5"></script>
+  <script src="pwa.js?v=20260724.2"></script>
+</body>
+</html>
