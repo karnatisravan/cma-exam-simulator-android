@@ -1,0 +1,50 @@
+name: V8 Source Snapshot
+
+on:
+  push:
+    branches: [v8-feature-upgrade]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v8-feature-upgrade
+      - name: Extract embedded simulator source
+        run: |
+          set -euo pipefail
+          rm -rf _v8_project _v8_web v8-source-snapshot
+          mkdir -p _v8_project _v8_web v8-source-snapshot
+          unzip -q android-project-bundle.zip -d _v8_project
+          test -f _v8_project/app/src/main/res/raw/cma_simulator.zip
+          unzip -q _v8_project/app/src/main/res/raw/cma_simulator.zip -d _v8_web
+          find _v8_web -type f -printf '%P\t%s bytes\n' | sort > v8-source-snapshot/SOURCE-MANIFEST.txt
+          while IFS= read -r -d '' file; do
+            rel="${file#_v8_web/}"
+            size=$(stat -c%s "$file")
+            case "$rel" in
+              *.html|*.css|*.js|*.webmanifest|*.md|package.json)
+                if [ "$size" -le 1500000 ]; then
+                  mkdir -p "v8-source-snapshot/$(dirname "$rel")"
+                  cp "$file" "v8-source-snapshot/$rel"
+                fi
+                ;;
+            esac
+          done < <(find _v8_web -type f -print0)
+      - name: Commit source snapshot
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add v8-source-snapshot
+          if git diff --cached --quiet; then
+            echo "No snapshot changes"
+          else
+            git commit -m "Expose V7 web source for V8 feature development"
+            git push origin HEAD:v8-feature-upgrade
+          fi
