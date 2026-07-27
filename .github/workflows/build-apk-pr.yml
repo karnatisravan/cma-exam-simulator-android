@@ -10,6 +10,7 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  APP_VERSION: "8.0.0"
 
 jobs:
   build-test-apk:
@@ -30,6 +31,24 @@ jobs:
           test -f project/settings.gradle
           test -f project/app/build.gradle
           test -f project/app/src/main/res/raw/cma_simulator.zip
+
+      - name: Apply private-safe V8 web upgrade
+        run: |
+          set -euo pipefail
+          rm -rf project/v8-web
+          mkdir -p project/v8-web
+          unzip -q project/app/src/main/res/raw/cma_simulator.zip -d project/v8-web
+          python3 v8-overlay/apply-v8-patches.py project/v8-web v8-overlay
+          node --check v8-overlay/cma-v8-core.js
+          node --check v8-overlay/cma-v8.js
+          node v8-tests/test-v8-core.js
+          python3 v8-tests/validate-v8-runtime.py project/v8-web
+          if [ -f project/v8-web/package.json ]; then
+            (cd project/v8-web && npm test)
+          fi
+          rm project/app/src/main/res/raw/cma_simulator.zip
+          (cd project/v8-web && zip -qr ../app/src/main/res/raw/cma_simulator.zip .)
+          unzip -t project/app/src/main/res/raw/cma_simulator.zip
 
       - name: Align smoke test with current app title
         run: sed -i 's/US CMA Part 2 Exam Simulator/CMA Exam Simulator/g' project/app/src/androidTest/java/com/cmaexamsimulator/mobile/AppLaunchTest.java
@@ -52,7 +71,7 @@ jobs:
         working-directory: project
         run: gradle --no-daemon testDebugUnitTest assembleDebug
 
-      - name: Verify APK and embedded V6 simulator
+      - name: Verify APK and embedded V8 simulator
         run: |
           APK=project/app/build/outputs/apk/debug/app-debug.apk
           test -s "$APK"
@@ -62,11 +81,14 @@ jobs:
           grep -q 'res/raw/cma_simulator.zip' project/app/build/apk-files.txt
           unzip -p "$APK" res/raw/cma_simulator.zip > project/app/build/embedded-web.zip
           unzip -t project/app/build/embedded-web.zip
-          unzip -l project/app/build/embedded-web.zip | grep -q 'index.html'
-          unzip -l project/app/build/embedded-web.zip | grep -q 'hock-2024-2025-catalog.json'
-          unzip -l project/app/build/embedded-web.zip | grep -q 'cma-v2.js'
-          unzip -l project/app/build/embedded-web.zip | grep -q 'android-app.js'
-          cp "$APK" US-CMA-Exam-Simulator-v6.0.apk
+          for required in index.html hock-2024-2025-catalog.json cma-v2.js cma-v8-core.js cma-v8.js cma-v8.css android-app.js; do
+            unzip -l project/app/build/embedded-web.zip | grep -q "$required"
+          done
+          if unzip -l project/app/build/embedded-web.zip | grep -Ei '\.(pdf|PDF)$'; then
+            echo "A PDF was incorrectly included in the public APK" >&2
+            exit 1
+          fi
+          cp "$APK" US-CMA-Exam-Simulator-v8.0.apk
 
       - name: Enable KVM
         run: |
@@ -91,8 +113,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: US-CMA-Exam-Simulator-v6.0-APK
-          path: US-CMA-Exam-Simulator-v6.0.apk
+          name: US-CMA-Exam-Simulator-v8.0-APK
+          path: US-CMA-Exam-Simulator-v8.0.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -100,7 +122,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: android-test-diagnostics
+          name: android-v8-test-diagnostics
           path: |
             project/app/build/emulator-test.log
             project/app/build/reports/
