@@ -125,6 +125,26 @@ def patch_runtime(web_dir: pathlib.Path, overlay_dir: pathlib.Path) -> None:
     new_unit_id = 'unitId: catalogUnit?.id || (typeof rawQuestion.unitId === "string" ? rawQuestion.unitId.trim() : "") || (section && unit ? (ADVANCED.stableUnitId ? ADVANCED.stableUnitId(section, unit) : `${section}-${unit}`) : ""),'
     app = replace_once(app, old_unit_id, new_unit_id, "safe unassigned archived unit ID")
 
+    old_lifecycle = '''      retired: Boolean(rawQuestion.retired || rawQuestion.status === "archived"),
+      retiredAt: (rawQuestion.retired || rawQuestion.status === "archived") && typeof rawQuestion.retiredAt === "string" ? rawQuestion.retiredAt : "",
+      retirementReason: (rawQuestion.retired || rawQuestion.status === "archived") && typeof rawQuestion.retirementReason === "string" ? rawQuestion.retirementReason : "",
+      status: typeof rawQuestion.status === "string" ? rawQuestion.status : rawQuestion.isRemoved ? "removed" : rawQuestion.retired ? "archived" : "active",
+      isRemoved: Boolean(rawQuestion.isRemoved || rawQuestion.status === "removed"),'''
+    new_lifecycle = '''      retired: Boolean(rawQuestion.retired || rawQuestion.status === "archived" || v8Import?.inactive),
+      retiredAt: (rawQuestion.retired || rawQuestion.status === "archived" || v8Import?.inactive) && typeof rawQuestion.retiredAt === "string" ? rawQuestion.retiredAt : "",
+      retirementReason: rawQuestion.retired || rawQuestion.status === "archived" || v8Import?.inactive
+        ? (typeof rawQuestion.retirementReason === "string" && rawQuestion.retirementReason.trim()
+          ? rawQuestion.retirementReason.trim()
+          : v8Import?.reviewRequired ? "Classification review required" : "")
+        : "",
+      status: rawQuestion.isRemoved || rawQuestion.status === "removed"
+        ? "removed"
+        : rawQuestion.retired || rawQuestion.status === "archived" || v8Import?.inactive
+          ? "archived"
+          : typeof rawQuestion.status === "string" ? rawQuestion.status : "active",
+      isRemoved: Boolean(rawQuestion.isRemoved || rawQuestion.status === "removed"),'''
+    app = replace_once(app, old_lifecycle, new_lifecycle, "archive unassigned classification-review records")
+
     old_explanation_output = 'explanation: typeof rawQuestion.explanation === "string" ? rawQuestion.explanation.trim() : ""'
     new_explanation_output = 'explanation: v8Import ? v8Import.explanation : (typeof rawQuestion.explanation === "string" ? rawQuestion.explanation.trim() : "")'
     app = replace_once(app, old_explanation_output, new_explanation_output, "normalized explanation output")
@@ -132,7 +152,7 @@ def patch_runtime(web_dir: pathlib.Path, overlay_dir: pathlib.Path) -> None:
 
     sw_path = web_dir / "service-worker.js"
     sw = sw_path.read_text(encoding="utf-8")
-    sw = re.sub(r'const CACHE_NAME = "cma-simulator-[^"]+";', 'const CACHE_NAME = "cma-simulator-v8-20260727-hotfix1";', sw, count=1)
+    sw = re.sub(r'const CACHE_NAME = "cma-simulator-[^"]+";', 'const CACHE_NAME = "cma-simulator-v8-20260727-hotfix2";', sw, count=1)
     cache_anchor = '  "./cma-v2.js?v=20260724.1",'
     cache_entries = '  "./cma-v8-core.js?v=20260727.2",\n' + cache_anchor + '\n  "./cma-v8.js?v=20260727.2",\n  "./cma-v8.css?v=20260727.2",'
     sw = replace_once(sw, cache_anchor, cache_entries, "service-worker V8 cache")
