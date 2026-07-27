@@ -28,19 +28,19 @@ def patch_runtime(web_dir: pathlib.Path, overlay_dir: pathlib.Path) -> None:
     html = replace_once(
         html,
         "</head>",
-        '  <link rel="stylesheet" href="cma-v8.css?v=20260727.1">\n</head>',
+        '  <link rel="stylesheet" href="cma-v8.css?v=20260727.2">\n</head>',
         "V8 stylesheet",
     )
     html = replace_once(
         html,
         '<script src="cma-v2.js?v=20260724.1"',
-        '<script src="cma-v8-core.js?v=20260727.1"></script>\n  <script src="cma-v2.js?v=20260724.1"',
+        '<script src="cma-v8-core.js?v=20260727.2"></script>\n  <script src="cma-v2.js?v=20260724.1"',
         "V8 core script order",
     )
     html = replace_once(
         html,
         "</body>",
-        '  <script src="cma-v8.js?v=20260727.1"></script>\n</body>',
+        '  <script src="cma-v8.js?v=20260727.2"></script>\n</body>',
         "V8 UI script",
     )
     index_path.write_text(html, encoding="utf-8")
@@ -79,13 +79,62 @@ def patch_runtime(web_dir: pathlib.Path, overlay_dir: pathlib.Path) -> None:
     old_app_type = 'questionType: typeof rawQuestion.questionType === "string" ? rawQuestion.questionType : "mixed",'
     new_app_type = 'questionType: globalThis.CMAV8Core?.classifyQuestionType(rawQuestion) || (typeof rawQuestion.questionType === "string" ? rawQuestion.questionType : "mixed"),'
     app = replace_once(app, old_app_type, new_app_type, "legacy question-type classification")
+
+    old_identity = '''    const id = typeof rawQuestion.id === "string" ? rawQuestion.id.trim() : "";
+    const rawSection = typeof (rawQuestion.sectionId || rawQuestion.section) === "string" ? String(rawQuestion.sectionId || rawQuestion.section).trim() : "";
+    const section = normalizeSectionValue(rawSection);
+    const legacySection = Boolean(section && rawSection.toUpperCase() !== section);
+    const catalogSection = ADVANCED.findSection?.(catalog, section);
+    const catalogUnit = ADVANCED.findUnit?.(catalog, section, rawQuestion.unitId || rawQuestion.unit);
+    const unit = catalogUnit?.unitCode || (typeof rawQuestion.unit === "string" ? rawQuestion.unit.trim() : "");'''
+    new_identity = '''    const id = typeof rawQuestion.id === "string" ? rawQuestion.id.trim() : "";
+    const v8Import = globalThis.CMAV8Core?.normalizeImportMetadata?.(rawQuestion) || null;
+    const rawSection = v8Import?.section || (typeof (rawQuestion.sectionId || rawQuestion.section) === "string" ? String(rawQuestion.sectionId || rawQuestion.section).trim() : "");
+    const section = normalizeSectionValue(rawSection);
+    const legacySection = Boolean(section && rawSection.toUpperCase() !== section);
+    const catalogSection = ADVANCED.findSection?.(catalog, section);
+    const catalogUnit = ADVANCED.findUnit?.(catalog, section, v8Import?.unit || rawQuestion.unitId || rawQuestion.unit);
+    const unit = catalogUnit?.unitCode || v8Import?.unit || (typeof rawQuestion.unit === "string" ? rawQuestion.unit.trim() : "");'''
+    app = replace_once(app, old_identity, new_identity, "V22 import metadata normalization")
+
+    old_names = '''    const suppliedSectionName = typeof rawQuestion.sectionName === "string" ? rawQuestion.sectionName.trim() : "";
+    const suppliedUnitName = typeof rawQuestion.unitName === "string" ? rawQuestion.unitName.trim() : "";'''
+    new_names = '''    const suppliedSectionName = v8Import ? v8Import.sectionName : (typeof rawQuestion.sectionName === "string" ? rawQuestion.sectionName.trim() : "");
+    const suppliedUnitName = v8Import ? v8Import.unitName : (typeof rawQuestion.unitName === "string" ? rawQuestion.unitName.trim() : "");'''
+    app = replace_once(app, old_names, new_names, "nullable section and unit names")
+
+    old_validation = '''    if (!section || !SECTION_KEYS.includes(section)) errors.push(`${label}${idSuffix}: ‘section’ must be A, B, C, D, E, or F.`);
+    if (rawQuestion.sectionName !== undefined && typeof rawQuestion.sectionName !== "string") errors.push(`${label}${idSuffix}: ‘sectionName’ must be text when provided.`);
+    if (!unit) errors.push(`${label}${idSuffix}: ‘unit’ is required.`);
+    if (rawQuestion.unitName !== undefined && typeof rawQuestion.unitName !== "string") errors.push(`${label}${idSuffix}: ‘unitName’ must be text when provided.`);'''
+    new_validation = '''    if ((!section || !SECTION_KEYS.includes(section)) && !v8Import?.inactive) errors.push(`${label}${idSuffix}: ‘section’ must be A, B, C, D, E, or F.`);
+    if (rawQuestion.sectionName !== undefined && rawQuestion.sectionName !== null && typeof rawQuestion.sectionName !== "string") errors.push(`${label}${idSuffix}: ‘sectionName’ must be text when provided.`);
+    if (!unit && !v8Import?.inactive) errors.push(`${label}${idSuffix}: ‘unit’ is required.`);
+    if (rawQuestion.unitName !== undefined && rawQuestion.unitName !== null && typeof rawQuestion.unitName !== "string") errors.push(`${label}${idSuffix}: ‘unitName’ must be text when provided.`);'''
+    app = replace_once(app, old_validation, new_validation, "nullable and inactive classification validation")
+
+    old_explanation_validation = '''    if (rawQuestion.explanation !== undefined && typeof rawQuestion.explanation !== "string") {
+      errors.push(`${label}${idSuffix}: ‘explanation’ must be text when provided.`);
+    }'''
+    new_explanation_validation = '''    if (rawQuestion.explanation !== undefined && rawQuestion.explanation !== null && typeof rawQuestion.explanation !== "string") {
+      errors.push(`${label}${idSuffix}: ‘explanation’ must be text when provided.`);
+    }'''
+    app = replace_once(app, old_explanation_validation, new_explanation_validation, "nullable explanation validation")
+
+    old_unit_id = 'unitId: catalogUnit?.id || rawQuestion.unitId || (ADVANCED.stableUnitId ? ADVANCED.stableUnitId(section, unit) : `${section}-${unit}`),'
+    new_unit_id = 'unitId: catalogUnit?.id || (typeof rawQuestion.unitId === "string" ? rawQuestion.unitId.trim() : "") || (section && unit ? (ADVANCED.stableUnitId ? ADVANCED.stableUnitId(section, unit) : `${section}-${unit}`) : ""),'
+    app = replace_once(app, old_unit_id, new_unit_id, "safe unassigned archived unit ID")
+
+    old_explanation_output = 'explanation: typeof rawQuestion.explanation === "string" ? rawQuestion.explanation.trim() : ""'
+    new_explanation_output = 'explanation: v8Import ? v8Import.explanation : (typeof rawQuestion.explanation === "string" ? rawQuestion.explanation.trim() : "")'
+    app = replace_once(app, old_explanation_output, new_explanation_output, "normalized explanation output")
     app_path.write_text(app, encoding="utf-8")
 
     sw_path = web_dir / "service-worker.js"
     sw = sw_path.read_text(encoding="utf-8")
-    sw = re.sub(r'const CACHE_NAME = "cma-simulator-[^"]+";', 'const CACHE_NAME = "cma-simulator-v8-20260727";', sw, count=1)
+    sw = re.sub(r'const CACHE_NAME = "cma-simulator-[^"]+";', 'const CACHE_NAME = "cma-simulator-v8-20260727-hotfix1";', sw, count=1)
     cache_anchor = '  "./cma-v2.js?v=20260724.1",'
-    cache_entries = '  "./cma-v8-core.js?v=20260727.1",\n' + cache_anchor + '\n  "./cma-v8.js?v=20260727.1",\n  "./cma-v8.css?v=20260727.1",'
+    cache_entries = '  "./cma-v8-core.js?v=20260727.2",\n' + cache_anchor + '\n  "./cma-v8.js?v=20260727.2",\n  "./cma-v8.css?v=20260727.2",'
     sw = replace_once(sw, cache_anchor, cache_entries, "service-worker V8 cache")
     sw_path.write_text(sw, encoding="utf-8")
 
