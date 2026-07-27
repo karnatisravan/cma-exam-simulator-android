@@ -5,7 +5,7 @@ const core = require("../v8-overlay/cma-v8-core.js");
 
 assert.strictEqual(core.classifyQuestionType({ question: "Which statement best describes systematic risk?", options: { A: "Company-specific risk", B: "Risk affecting all investments", C: "Default risk", D: "Liquidity risk" } }), "theory");
 assert.strictEqual(core.classifyQuestionType({ question: "A project requires £40,000 and returns £12,000 annually. What is the payback period?", options: { A: "2.3 years", B: "3.3 years", C: "4 years", D: "5 years" } }), "calculation");
-assert.strictEqual(core.classifyQuestionType({ question: "A company faces a capacity constraint and has the following unit data. Which product should it prioritise?", options: { A: "Product A", B: "Product B", C: "Both", D: "Neither" } }), "mixed");
+assert.strictEqual(core.classifyQuestionType({ question: "A company has a capacity constraint. Product A contributes £15 and uses 1.5 machine hours; Product B contributes £25 and uses 2.5 machine hours. Which product should it prioritise?", options: { A: "Product A", B: "Product B", C: "Both are equally profitable per constrained hour", D: "There is insufficient information" } }), "mixed");
 assert.strictEqual(core.classifyQuestionType({ questionType: "theory", question: "Contains £100 but is explicitly classified." }), "theory");
 
 const flash = core.parseFlashcardImport({
