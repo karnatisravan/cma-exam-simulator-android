@@ -1,0 +1,18 @@
+=== apply-v8-patches ===
+exit=0
+
+=== node-check-core ===
+exit=0
+
+=== node-check-ui ===
+exit=0
+
+=== v8-core-tests ===
+exit=0
+V8 core tests passed: classification, flashcard import, scheduling, and revision manifest.
+
+=== v8-runtime-validation ===
+exit=0
+V8 runtime validation passed.
+
+OVERALL_EXIT=0

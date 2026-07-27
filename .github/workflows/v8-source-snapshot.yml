@@ -1,0 +1,85 @@
+name: V8 Source Snapshot
+
+on:
+  push:
+    branches: [v8-feature-upgrade]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v8-feature-upgrade
+      - name: Extract embedded simulator source
+        run: |
+          set -euo pipefail
+          rm -rf _v8_project _v8_web _v8_patched v8-source-snapshot
+          mkdir -p _v8_project _v8_web _v8_patched v8-source-snapshot
+          unzip -q android-project-bundle.zip -d _v8_project
+          test -f _v8_project/app/src/main/res/raw/cma_simulator.zip
+          unzip -q _v8_project/app/src/main/res/raw/cma_simulator.zip -d _v8_web
+          find _v8_web -type f -printf '%P\t%s bytes\n' | sort > v8-source-snapshot/SOURCE-MANIFEST.txt
+          while IFS= read -r -d '' file; do
+            rel="${file#_v8_web/}"
+            size=$(stat -c%s "$file")
+            case "$rel" in
+              *.html|*.css|*.js|*.webmanifest|*.md|package.json)
+                if [ "$size" -le 1500000 ]; then
+                  mkdir -p "v8-source-snapshot/$(dirname "$rel")"
+                  cp "$file" "v8-source-snapshot/$rel"
+                fi
+                ;;
+            esac
+          done < <(find _v8_web -type f -print0)
+          grep -RniE 'revision|flashcard|flash card|import|questionType|theory|calculation|test builder|data-screen|screen-' _v8_web --include='*.html' --include='*.js' --include='*.css' | head -n 4000 > v8-source-snapshot/KEYWORD-INDEX.txt || true
+          grep -oE 'id="[^"]+"' _v8_web/index.html | sort -u > v8-source-snapshot/DOM-IDS.txt || true
+          grep -oE '<script[^>]+src="[^"]+"' _v8_web/index.html > v8-source-snapshot/SCRIPT-ORDER.txt || true
+
+      - name: Create concise V8 validation report
+        run: |
+          set +e
+          cp -a _v8_web/. _v8_patched/
+          report=v8-source-snapshot/V8-VALIDATION-REPORT.txt
+          : > "$report"
+          overall=0
+          run_check() {
+            label="$1"
+            shift
+            temp=$(mktemp)
+            echo "=== $label ===" >> "$report"
+            "$@" >"$temp" 2>&1
+            code=$?
+            echo "exit=$code" >> "$report"
+            tail -n 120 "$temp" >> "$report"
+            echo >> "$report"
+            rm -f "$temp"
+            if [ "$code" -ne 0 ]; then overall=1; fi
+          }
+          run_check "apply-v8-patches" python3 v8-overlay/apply-v8-patches.py _v8_patched v8-overlay
+          run_check "node-check-core" node --check v8-overlay/cma-v8-core.js
+          run_check "node-check-ui" node --check v8-overlay/cma-v8.js
+          run_check "v8-core-tests" node v8-tests/test-v8-core.js
+          run_check "v8-runtime-validation" python3 v8-tests/validate-v8-runtime.py _v8_patched
+          if [ -f _v8_patched/package.json ]; then
+            run_check "existing-npm-tests" bash -lc 'cd _v8_patched && npm test'
+          fi
+          echo "OVERALL_EXIT=$overall" >> "$report"
+          exit 0
+
+      - name: Commit source snapshot and report
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add v8-source-snapshot
+          if git diff --cached --quiet; then
+            echo "No snapshot changes"
+          else
+            git commit -m "Refresh V7 source snapshot and V8 validation report"
+            git push origin HEAD:v8-feature-upgrade
+          fi
