@@ -21,6 +21,7 @@ def main(root: pathlib.Path) -> None:
     v2 = (root / "cma-v2.js").read_text(encoding="utf-8")
     app = (root / "app.js").read_text(encoding="utf-8")
     sw = (root / "service-worker.js").read_text(encoding="utf-8")
+    core = (root / "cma-v8-core.js").read_text(encoding="utf-8")
     ui = (root / "cma-v8.js").read_text(encoding="utf-8")
 
     require(index, "cma-v8-core.js", "V8 core script")
@@ -35,6 +36,16 @@ def main(root: pathlib.Path) -> None:
     require(v2, "CMAV8Core?.classifyQuestionType", "automatic V2 classification")
     require(app, "CMAV8Core?.classifyQuestionType", "automatic legacy classification")
 
+    require(core, "normalizeImportMetadata", "V22 metadata normalizer")
+    require(core, "unit_mapping_status", "pending unit-mapping handling")
+    require(core, "classification.reviewRequired", "classification review handling")
+    require(app, "CMAV8Core?.normalizeImportMetadata", "compatibility importer normalizer hook")
+    require(app, "rawQuestion.explanation !== null", "nullable explanation acceptance")
+    require(app, "!v8Import?.inactive", "unassigned review-record acceptance")
+    require(app, "section && unit ?", "safe unit ID generation")
+    require(app, 'v8Import?.reviewRequired ? "Classification review required"', "review retirement reason")
+    require(app, 'rawQuestion.status === "archived" || v8Import?.inactive', "review-record archival")
+
     for asset in ("cma-v8-core.js", "cma-v8.js", "cma-v8.css"):
         require(sw, asset, f"offline cache entry for {asset}")
 
@@ -48,7 +59,7 @@ def main(root: pathlib.Path) -> None:
     if forbidden:
         raise AssertionError(f"Copyrighted PDF must not be in public runtime: {forbidden}")
 
-    print("V8 runtime validation passed.")
+    print("V8 runtime validation passed, including nullable metadata and safe archival of V22 review records.")
 
 
 if __name__ == "__main__":

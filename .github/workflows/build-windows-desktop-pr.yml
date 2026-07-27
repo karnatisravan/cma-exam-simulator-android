@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  APP_VERSION: "8.0.0"
+  APP_VERSION: "8.0.1"
 
 jobs:
   windows-desktop:
@@ -93,7 +93,7 @@ jobs:
             "strings"
           )
 
-          const appVersion = "8.0.0"
+          const appVersion = "8.0.1"
 
           //go:embed web.zip
           var webFiles embed.FS
@@ -225,15 +225,15 @@ jobs:
         run: |
           Push-Location work/launcher
           go test ./...
-          go build -trimpath -o ../../release/US-CMA-Exam-Simulator-v8.0-Test.exe .
-          go build -trimpath -ldflags="-H windowsgui -s -w" -o ../../release/US-CMA-Exam-Simulator-v8.0.exe .
+          go build -trimpath -o ../../release/US-CMA-Exam-Simulator-v8.0.1-Test.exe .
+          go build -trimpath -ldflags="-H windowsgui -s -w" -o ../../release/US-CMA-Exam-Simulator-v8.0.1.exe .
           Pop-Location
-          $guiExe = "release/US-CMA-Exam-Simulator-v8.0.exe"
-          $testExe = "release/US-CMA-Exam-Simulator-v8.0-Test.exe"
+          $guiExe = "release/US-CMA-Exam-Simulator-v8.0.1.exe"
+          $testExe = "release/US-CMA-Exam-Simulator-v8.0.1-Test.exe"
           if (!(Test-Path $guiExe)) { throw "Windows GUI executable not built" }
           if (!(Test-Path $testExe)) { throw "Windows test executable not built" }
           if ((Get-Item $guiExe).Length -lt 1000000) { throw "Windows GUI executable unexpectedly small" }
-          $target = Join-Path $env:RUNNER_TEMP "cma-desktop-v8-smoke"
+          $target = Join-Path $env:RUNNER_TEMP "cma-desktop-v8-hotfix-smoke"
           Remove-Item $target -Recurse -Force -ErrorAction SilentlyContinue
           & $testExe --extract-only --target $target | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "Extraction smoke test failed" }
@@ -248,18 +248,20 @@ jobs:
         shell: pwsh
         run: |
           @'
-          # US CMA Exam Simulator Desktop V8
+          # US CMA Exam Simulator Desktop V8.0.1
 
-          Double-click `US-CMA-Exam-Simulator-v8.0.exe` to start.
+          Double-click `US-CMA-Exam-Simulator-v8.0.1.exe` to start.
 
-          V8 adds:
+          V8.0.1 fixes question-bank imports that contain nullable explanation/name fields, modern sectionId/unitId metadata, and archived unassigned review records.
+
+          V8 also includes:
           - Flashcard JSON import, deck filters, active-recall study, and spaced-review tracking.
           - Theory-only, calculation-only, and mixed/scenario filters in Build Test.
           - Private local PDF revision decks with slide navigation, topic ranges, resume position, bookmarks, completed-page tracking, and full-screen mode.
 
           To use the supplied Section B revision deck, open Revision and attach `CMA Part 2 Section B Slides.PDF`. The file is stored locally in the existing browser profile and is never uploaded by the app.
 
-          The V8 launcher deliberately reuses the V7 browser profile so existing questions, notes, attempts, history, and settings remain available.
+          The launcher deliberately reuses the V7 browser profile so existing questions, notes, attempts, history, and settings remain available. The 8.0.1 runtime marker forces this hotfix to replace the earlier V8 runtime files.
 
           Windows 10 or Windows 11, 64-bit, with Microsoft Edge or Google Chrome is required.
           '@ | Set-Content -Encoding UTF8 release/README-DESKTOP.md
@@ -270,17 +272,17 @@ jobs:
           Platform: Windows x86-64
           Privacy: No PDF or copyrighted slide asset is included in this public CI package.
           "@ | Set-Content -Encoding UTF8 release/BUILD-INFO.txt
-          $hash = (Get-FileHash release/US-CMA-Exam-Simulator-v8.0.exe -Algorithm SHA256).Hash.ToLower()
-          "$hash  US-CMA-Exam-Simulator-v8.0.exe" | Set-Content -Encoding ASCII release/SHA256SUMS.txt
-          Compress-Archive -Path release/* -DestinationPath US-CMA-Exam-Simulator-v8.0-Windows.zip -CompressionLevel Optimal
+          $hash = (Get-FileHash release/US-CMA-Exam-Simulator-v8.0.1.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  US-CMA-Exam-Simulator-v8.0.1.exe" | Set-Content -Encoding ASCII release/SHA256SUMS.txt
+          Compress-Archive -Path release/* -DestinationPath US-CMA-Exam-Simulator-v8.0.1-Windows.zip -CompressionLevel Optimal
 
       - name: Upload Windows package
         uses: actions/upload-artifact@v4
         with:
-          name: US-CMA-Exam-Simulator-v8.0-Windows
+          name: US-CMA-Exam-Simulator-v8.0.1-Windows
           path: |
-            US-CMA-Exam-Simulator-v8.0-Windows.zip
-            release/US-CMA-Exam-Simulator-v8.0.exe
+            US-CMA-Exam-Simulator-v8.0.1-Windows.zip
+            release/US-CMA-Exam-Simulator-v8.0.1.exe
             release/README-DESKTOP.md
             release/BUILD-INFO.txt
             release/SHA256SUMS.txt
@@ -291,7 +293,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-desktop-v8-diagnostics
+          name: windows-desktop-v8.0.1-diagnostics
           path: |
             work/
             release/

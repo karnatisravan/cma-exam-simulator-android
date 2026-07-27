@@ -49,6 +49,79 @@
     return "mixed";
   }
 
+  function sectionFromValue(value) {
+    const text = clean(value);
+    if (!text) return "";
+    let match = text.match(/^[A-F]$/i);
+    if (match) return match[0].toUpperCase();
+    match = text.match(/^Section\s+([A-F])(?:\b|\s*[-:—])/i);
+    if (match) return match[1].toUpperCase();
+    match = text.match(/^([A-F])(?:[-_.:\s]+)?U0*\d+/i);
+    if (match) return match[1].toUpperCase();
+    match = text.match(/^([A-F])[-_.:]0*\d+(?:$|[-_.:])/i);
+    return match ? match[1].toUpperCase() : "";
+  }
+
+  function unitFromValue(value) {
+    const text = clean(value);
+    if (!text) return "";
+    let match = text.match(/^Unit\s+0*(\d+)$/i);
+    if (match) return `Unit ${Number(match[1])}`;
+    match = text.match(/^0*(\d+)$/);
+    if (match) return `Unit ${Number(match[1])}`;
+    return text;
+  }
+
+  function unitFromIdentifier(value) {
+    const text = clean(value);
+    if (!text) return "";
+    let match = text.match(/(?:^|[-_.:])U0*(\d+)(?:$|[-_.:])/i);
+    if (!match) match = text.match(/^U0*(\d+)$/i);
+    return match ? `Unit ${Number(match[1])}` : "";
+  }
+
+  function normalizeImportMetadata(raw) {
+    const record = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+    const classification = record.classification && typeof record.classification === "object" && !Array.isArray(record.classification)
+      ? record.classification
+      : {};
+    const status = normal(record.status || (record.retired ? "archived" : record.isRemoved ? "removed" : ""));
+    const explicitlyInactive = Boolean(record.retired || record.isRemoved || ["archived", "removed", "retired", "inactive"].includes(status));
+    const sectionCandidates = [record.sectionId, record.section, classification.sectionId, classification.section, record.unitId, classification.unitId];
+    let section = "";
+    for (const value of sectionCandidates) {
+      section = sectionFromValue(value);
+      if (section) break;
+    }
+    const directUnitCandidates = [record.unit, record.unitCode, record.unitNumber, classification.unit, classification.unitCode, classification.unitNumber];
+    let unit = "";
+    for (const value of directUnitCandidates) {
+      unit = unitFromValue(value);
+      if (unit) break;
+    }
+    if (!unit) {
+      for (const value of [record.unitId, classification.unitId]) {
+        unit = unitFromIdentifier(value);
+        if (unit) break;
+      }
+    }
+    const reviewRequired = Boolean(
+      classification.reviewRequired ||
+      normal(record.unit_mapping_status) === "pending" ||
+      normal(record.classificationStatus) === "unclassified"
+    );
+    const inactive = explicitlyInactive || (reviewRequired && (!section || !unit));
+    return {
+      section,
+      unit,
+      sectionName: clean(record.sectionName),
+      unitName: clean(record.unitName),
+      explanation: clean(record.explanation),
+      inactive,
+      reviewRequired
+    };
+  }
+
   function cardBackFromQuestion(item) {
     const answer = clean(item && item.correctAnswer).toUpperCase();
     const option = clean(item && item.options && item.options[answer]);
@@ -143,5 +216,5 @@
     };
   }
 
-  return Object.freeze({ TYPES, hash, slug, classifyQuestionType, normalizeFlashcard, parseFlashcardImport, scheduleReview, normalizeRevisionManifest });
+  return Object.freeze({ TYPES, hash, slug, classifyQuestionType, normalizeImportMetadata, normalizeFlashcard, parseFlashcardImport, scheduleReview, normalizeRevisionManifest });
 });
