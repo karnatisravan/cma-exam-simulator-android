@@ -86,14 +86,14 @@
       ? record.classification
       : {};
     const status = normal(record.status || (record.retired ? "archived" : record.isRemoved ? "removed" : ""));
-    const inactive = Boolean(record.retired || record.isRemoved || ["archived", "removed", "retired", "inactive"].includes(status));
+    const explicitlyInactive = Boolean(record.retired || record.isRemoved || ["archived", "removed", "retired", "inactive"].includes(status));
     const sectionCandidates = [record.sectionId, record.section, classification.sectionId, classification.section, record.unitId, classification.unitId];
     let section = "";
     for (const value of sectionCandidates) {
       section = sectionFromValue(value);
       if (section) break;
     }
-    const directUnitCandidates = [record.unit, record.unitCode, classification.unit, classification.unitCode];
+    const directUnitCandidates = [record.unit, record.unitCode, record.unitNumber, classification.unit, classification.unitCode, classification.unitNumber];
     let unit = "";
     for (const value of directUnitCandidates) {
       unit = unitFromValue(value);
@@ -105,13 +105,20 @@
         if (unit) break;
       }
     }
+    const reviewRequired = Boolean(
+      classification.reviewRequired ||
+      normal(record.unit_mapping_status) === "pending" ||
+      normal(record.classificationStatus) === "unclassified"
+    );
+    const inactive = explicitlyInactive || (reviewRequired && (!section || !unit));
     return {
       section,
       unit,
       sectionName: clean(record.sectionName),
       unitName: clean(record.unitName),
       explanation: clean(record.explanation),
-      inactive
+      inactive,
+      reviewRequired
     };
   }
 
