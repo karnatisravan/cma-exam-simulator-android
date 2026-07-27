@@ -1,0 +1,284 @@
+name: Build Windows Desktop App PR
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  APP_VERSION: "7.0.0"
+
+jobs:
+  windows-desktop:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract embedded V6 application
+        shell: pwsh
+        run: |
+          if (!(Test-Path "android-project-bundle.zip")) { throw "android-project-bundle.zip missing" }
+          New-Item -ItemType Directory -Force -Path work, work/project, work/web, work/launcher, release | Out-Null
+          Expand-Archive -Path android-project-bundle.zip -DestinationPath work/project -Force
+          $webZip = "work/project/app/src/main/res/raw/cma_simulator.zip"
+          if (!(Test-Path $webZip)) { throw "Embedded cma_simulator.zip missing" }
+          Expand-Archive -Path $webZip -DestinationPath work/web -Force
+          foreach ($required in @("index.html", "cma-v2.js", "hock-2024-2025-catalog.json")) {
+            if (!(Test-Path (Join-Path "work/web" $required))) { throw "Required runtime file missing: $required" }
+          }
+          @'
+          (() => {
+            try {
+              localStorage.setItem('cma-desktop-runtime', 'windows-v7');
+              document.documentElement.dataset.desktopRuntime = 'windows-v7';
+            } catch (_) {}
+          })();
+          '@ | Set-Content -Encoding UTF8 work/web/desktop-runtime.js
+          $indexPath = "work/web/index.html"
+          $html = Get-Content $indexPath -Raw
+          if ($html -notmatch 'desktop-runtime\.js') {
+            $html = $html.Replace('</body>', "  <script src=`"desktop-runtime.js`"></script>`r`n</body>")
+            Set-Content -Path $indexPath -Value $html -Encoding UTF8
+          }
+          Compress-Archive -Path work/web/* -DestinationPath work/launcher/web.zip -CompressionLevel Optimal
+
+      - name: Validate web runtime
+        shell: pwsh
+        run: |
+          Get-ChildItem work/web -Recurse -Filter *.js | ForEach-Object {
+            node --check $_.FullName
+            if ($LASTEXITCODE -ne 0) { throw "JavaScript syntax failure: $($_.FullName)" }
+          }
+          Get-ChildItem work/web -Recurse -Filter *.json | ForEach-Object {
+            Get-Content $_.FullName -Raw | ConvertFrom-Json | Out-Null
+          }
+          if (Test-Path work/web/package.json) {
+            Push-Location work/web
+            npm test
+            if ($LASTEXITCODE -ne 0) { throw "Simulator tests failed" }
+            Pop-Location
+          }
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+          cache: false
+
+      - name: Generate native launcher
+        shell: pwsh
+        run: |
+          @'
+          package main
+
+          import (
+            "archive/zip"
+            "embed"
+            "errors"
+            "fmt"
+            "io"
+            "os"
+            "os/exec"
+            "path/filepath"
+            "runtime"
+            "strings"
+          )
+
+          const appVersion = "7.0.0"
+
+          //go:embed web.zip
+          var webFiles embed.FS
+
+          func main() {
+            targetOverride := ""
+            extractOnly := false
+            for i := 1; i < len(os.Args); i++ {
+              switch os.Args[i] {
+              case "--version":
+                fmt.Println(appVersion)
+                return
+              case "--extract-only":
+                extractOnly = true
+              case "--target":
+                if i+1 < len(os.Args) {
+                  i++
+                  targetOverride = os.Args[i]
+                }
+              }
+            }
+            target, err := applicationDirectory(targetOverride)
+            if err != nil { fail(err) }
+            if err := ensureRuntime(target); err != nil { fail(err) }
+            if extractOnly {
+              fmt.Println(target)
+              return
+            }
+            if err := openApplication(filepath.Join(target, "index.html")); err != nil { fail(err) }
+          }
+
+          func applicationDirectory(override string) (string, error) {
+            if strings.TrimSpace(override) != "" { return filepath.Abs(override) }
+            base := os.Getenv("LOCALAPPDATA")
+            if base == "" {
+              var err error
+              base, err = os.UserCacheDir()
+              if err != nil { return "", err }
+            }
+            return filepath.Join(base, "US-CMA-Exam-Simulator", "Desktop-v7", "app"), nil
+          }
+
+          func ensureRuntime(target string) error {
+            marker := filepath.Join(target, ".desktop-version")
+            current, _ := os.ReadFile(marker)
+            if string(current) == appVersion && exists(filepath.Join(target, "index.html")) { return nil }
+            if err := os.RemoveAll(target); err != nil { return err }
+            if err := os.MkdirAll(target, 0755); err != nil { return err }
+            bytes, err := webFiles.ReadFile("web.zip")
+            if err != nil { return err }
+            archive := filepath.Join(target, "runtime.zip")
+            if err := os.WriteFile(archive, bytes, 0644); err != nil { return err }
+            if err := unzip(archive, target); err != nil { return err }
+            _ = os.Remove(archive)
+            return os.WriteFile(marker, []byte(appVersion), 0644)
+          }
+
+          func unzip(archive, target string) error {
+            reader, err := zip.OpenReader(archive)
+            if err != nil { return err }
+            defer reader.Close()
+            root, err := filepath.Abs(target)
+            if err != nil { return err }
+            for _, entry := range reader.File {
+              destination, err := filepath.Abs(filepath.Join(root, entry.Name))
+              if err != nil { return err }
+              if destination != root && !strings.HasPrefix(destination, root+string(os.PathSeparator)) {
+                return errors.New("unsafe path in embedded archive")
+              }
+              if entry.FileInfo().IsDir() {
+                if err := os.MkdirAll(destination, 0755); err != nil { return err }
+                continue
+              }
+              if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil { return err }
+              source, err := entry.Open()
+              if err != nil { return err }
+              output, err := os.OpenFile(destination, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, entry.Mode())
+              if err != nil { source.Close(); return err }
+              _, copyErr := io.Copy(output, source)
+              closeErr := output.Close()
+              source.Close()
+              if copyErr != nil { return copyErr }
+              if closeErr != nil { return closeErr }
+            }
+            return nil
+          }
+
+          func openApplication(indexPath string) error {
+            if runtime.GOOS != "windows" { return errors.New("Windows is required") }
+            uri := "file:///" + strings.ReplaceAll(filepath.ToSlash(indexPath), " ", "%20")
+            profileRoot := os.Getenv("LOCALAPPDATA")
+            if profileRoot == "" { profileRoot, _ = os.UserCacheDir() }
+            profile := filepath.Join(profileRoot, "US-CMA-Exam-Simulator", "BrowserProfile-v7")
+            _ = os.MkdirAll(profile, 0755)
+            candidates := []string{
+              filepath.Join(os.Getenv("ProgramFiles(x86)"), "Microsoft", "Edge", "Application", "msedge.exe"),
+              filepath.Join(os.Getenv("ProgramFiles"), "Microsoft", "Edge", "Application", "msedge.exe"),
+              filepath.Join(os.Getenv("ProgramFiles"), "Google", "Chrome", "Application", "chrome.exe"),
+              filepath.Join(os.Getenv("ProgramFiles(x86)"), "Google", "Chrome", "Application", "chrome.exe"),
+              filepath.Join(os.Getenv("LOCALAPPDATA"), "Google", "Chrome", "Application", "chrome.exe"),
+            }
+            for _, browser := range candidates {
+              if browser != "" && exists(browser) {
+                return exec.Command(browser, "--app="+uri, "--user-data-dir="+profile, "--no-first-run", "--disable-background-networking", "--disable-component-update").Start()
+              }
+            }
+            return exec.Command("rundll32", "url.dll,FileProtocolHandler", uri).Start()
+          }
+
+          func exists(path string) bool {
+            info, err := os.Stat(path)
+            return err == nil && !info.IsDir()
+          }
+
+          func fail(err error) {
+            fmt.Fprintln(os.Stderr, err)
+            os.Exit(1)
+          }
+          '@ | Set-Content -Encoding UTF8 work/launcher/main.go
+          @'
+          module cma-desktop-launcher
+
+          go 1.24
+          '@ | Set-Content -Encoding UTF8 work/launcher/go.mod
+
+      - name: Build and smoke-test Windows executable
+        shell: pwsh
+        run: |
+          Push-Location work/launcher
+          go test ./...
+          go build -trimpath -o ../../release/US-CMA-Exam-Simulator-Desktop-v7-Test.exe .
+          go build -trimpath -ldflags="-H windowsgui -s -w" -o ../../release/US-CMA-Exam-Simulator-Desktop-v7.exe .
+          Pop-Location
+          $guiExe = "release/US-CMA-Exam-Simulator-Desktop-v7.exe"
+          $testExe = "release/US-CMA-Exam-Simulator-Desktop-v7-Test.exe"
+          if (!(Test-Path $guiExe)) { throw "Windows GUI executable not built" }
+          if (!(Test-Path $testExe)) { throw "Windows test executable not built" }
+          if ((Get-Item $guiExe).Length -lt 1000000) { throw "Windows GUI executable unexpectedly small" }
+          $target = Join-Path $env:RUNNER_TEMP "cma-desktop-v7-smoke"
+          Remove-Item $target -Recurse -Force -ErrorAction SilentlyContinue
+          & $testExe --extract-only --target $target | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "Extraction smoke test failed" }
+          foreach ($required in @("index.html", "cma-v2.js", "hock-2024-2025-catalog.json", "desktop-runtime.js")) {
+            if (!(Test-Path (Join-Path $target $required))) { throw "Extracted runtime missing: $required" }
+          }
+          $reported = (& $testExe --version | Out-String).Trim()
+          if ($reported -ne $env:APP_VERSION) { throw "Version test failed: '$reported'" }
+          Remove-Item $testExe -Force
+
+      - name: Create portable package
+        shell: pwsh
+        run: |
+          @'
+          # US CMA Exam Simulator Desktop v7
+
+          Double-click `US-CMA-Exam-Simulator-Desktop-v7.exe` to start.
+
+          The simulator runs offline and stores question banks, attempts, notes, history, and settings locally. Microsoft Edge or Google Chrome is required. Import the separately supplied audited CMA Part 2 v22 JSON database through Add Questions / Import JSON.
+
+          Windows 10 or Windows 11, 64-bit, is required.
+          '@ | Set-Content -Encoding UTF8 release/README-DESKTOP.md
+          @"
+          Version: $env:APP_VERSION
+          Commit: $env:GITHUB_SHA
+          Built: $(Get-Date -Format o)
+          Platform: Windows x86-64
+          "@ | Set-Content -Encoding UTF8 release/BUILD-INFO.txt
+          $hash = (Get-FileHash release/US-CMA-Exam-Simulator-Desktop-v7.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  US-CMA-Exam-Simulator-Desktop-v7.exe" | Set-Content -Encoding ASCII release/SHA256SUMS.txt
+          Compress-Archive -Path release/* -DestinationPath US-CMA-Exam-Simulator-Desktop-v7-Windows.zip -CompressionLevel Optimal
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: US-CMA-Exam-Simulator-Desktop-v7-Windows
+          path: |
+            US-CMA-Exam-Simulator-Desktop-v7-Windows.zip
+            release/US-CMA-Exam-Simulator-Desktop-v7.exe
+            release/README-DESKTOP.md
+            release/BUILD-INFO.txt
+            release/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload diagnostics after failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-desktop-v7-diagnostics
+          path: |
+            work/
+            release/
+          if-no-files-found: ignore
+          retention-days: 7
