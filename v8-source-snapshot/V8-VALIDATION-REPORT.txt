@@ -1,0 +1,42 @@
+=== apply-v8-patches ===
+exit=0
+
+=== node-check-core ===
+exit=0
+
+=== node-check-ui ===
+exit=0
+
+=== v8-core-tests ===
+exit=1
+node:assert:150
+  throw new AssertionError(obj);
+  ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+
+'theory' !== 'mixed'
+
+    at Object.<anonymous> (/home/runner/work/cma-exam-simulator-android/cma-exam-simulator-android/v8-tests/test-v8-core.js:8:8)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'theory',
+  expected: 'mixed',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.1
+
+=== v8-runtime-validation ===
+exit=0
+V8 runtime validation passed.
+
+OVERALL_EXIT=1
