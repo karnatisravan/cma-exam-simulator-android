@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  APP_VERSION: "8.0.1"
+  APP_VERSION: "8.0.2"
 
 jobs:
   windows-desktop:
@@ -35,15 +35,17 @@ jobs:
           @'
           (() => {
             try {
-              localStorage.setItem('cma-desktop-runtime', 'windows-v8');
-              document.documentElement.dataset.desktopRuntime = 'windows-v8';
+              localStorage.setItem('cma-desktop-runtime', 'windows-v8.0.2');
+              localStorage.setItem('cma-v22-import-fix', 'active');
+              document.documentElement.dataset.desktopRuntime = 'windows-v8.0.2';
+              document.title = document.title.replace(/\s+—\s+Desktop V[\d.]+$/, '') + ' — Desktop V8.0.2';
             } catch (_) {}
           })();
           '@ | Set-Content -Encoding UTF8 work/web/desktop-runtime.js
           $indexPath = "work/web/index.html"
           $html = Get-Content $indexPath -Raw
           if ($html -notmatch 'desktop-runtime\.js') {
-            $html = $html.Replace('</body>', "  <script src=`"desktop-runtime.js`"></script>`r`n</body>")
+            $html = $html.Replace('</body>', "  <script src=`"desktop-runtime.js?v=8.0.2`"></script>`r`n</body>")
             Set-Content -Path $indexPath -Value $html -Encoding UTF8
           }
           Compress-Archive -Path work/web/* -DestinationPath work/launcher/web.zip -CompressionLevel Optimal
@@ -68,6 +70,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Simulator tests failed" }
             Pop-Location
           }
+          $desktopRuntime = Get-Content work/web/desktop-runtime.js -Raw
+          if ($desktopRuntime -notmatch 'cma-v22-import-fix') { throw "V22 import-fix runtime marker missing" }
 
       - uses: actions/setup-go@v5
         with:
@@ -93,7 +97,7 @@ jobs:
             "strings"
           )
 
-          const appVersion = "8.0.1"
+          const appVersion = "8.0.2"
 
           //go:embed web.zip
           var webFiles embed.FS
@@ -133,6 +137,7 @@ jobs:
               base, err = os.UserCacheDir()
               if err != nil { return "", err }
             }
+            // Keep the same file origin so IndexedDB question history and notes survive.
             return filepath.Join(base, "US-CMA-Exam-Simulator", "Desktop-v7", "app"), nil
           }
 
@@ -183,10 +188,10 @@ jobs:
 
           func openApplication(indexPath string) error {
             if runtime.GOOS != "windows" { return errors.New("Windows is required") }
-            uri := "file:///" + strings.ReplaceAll(filepath.ToSlash(indexPath), " ", "%20")
+            uri := "file:///" + strings.ReplaceAll(filepath.ToSlash(indexPath), " ", "%20") + "?runtime=8.0.2"
             profileRoot := os.Getenv("LOCALAPPDATA")
             if profileRoot == "" { profileRoot, _ = os.UserCacheDir() }
-            // Keep the V7 profile path so existing question history and notes survive the V8 upgrade.
+            // Reuse the V7 profile so existing questions, history, notes, and settings survive.
             profile := filepath.Join(profileRoot, "US-CMA-Exam-Simulator", "BrowserProfile-v7")
             _ = os.MkdirAll(profile, 0755)
             candidates := []string{
@@ -198,7 +203,7 @@ jobs:
             }
             for _, browser := range candidates {
               if browser != "" && exists(browser) {
-                return exec.Command(browser, "--app="+uri, "--user-data-dir="+profile, "--no-first-run", "--disable-background-networking", "--disable-component-update").Start()
+                return exec.Command(browser, "--app="+uri, "--new-window", "--user-data-dir="+profile, "--no-first-run", "--disable-background-networking", "--disable-component-update", "--disable-application-cache").Start()
               }
             }
             return exec.Command("rundll32", "url.dll,FileProtocolHandler", uri).Start()
@@ -225,15 +230,15 @@ jobs:
         run: |
           Push-Location work/launcher
           go test ./...
-          go build -trimpath -o ../../release/US-CMA-Exam-Simulator-v8.0.1-Test.exe .
-          go build -trimpath -ldflags="-H windowsgui -s -w" -o ../../release/US-CMA-Exam-Simulator-v8.0.1.exe .
+          go build -trimpath -o ../../release/US-CMA-Exam-Simulator-v8.0.2-Test.exe .
+          go build -trimpath -ldflags="-H windowsgui -s -w" -o ../../release/US-CMA-Exam-Simulator-v8.0.2.exe .
           Pop-Location
-          $guiExe = "release/US-CMA-Exam-Simulator-v8.0.1.exe"
-          $testExe = "release/US-CMA-Exam-Simulator-v8.0.1-Test.exe"
+          $guiExe = "release/US-CMA-Exam-Simulator-v8.0.2.exe"
+          $testExe = "release/US-CMA-Exam-Simulator-v8.0.2-Test.exe"
           if (!(Test-Path $guiExe)) { throw "Windows GUI executable not built" }
           if (!(Test-Path $testExe)) { throw "Windows test executable not built" }
           if ((Get-Item $guiExe).Length -lt 1000000) { throw "Windows GUI executable unexpectedly small" }
-          $target = Join-Path $env:RUNNER_TEMP "cma-desktop-v8-hotfix-smoke"
+          $target = Join-Path $env:RUNNER_TEMP "cma-desktop-v8.0.2-smoke"
           Remove-Item $target -Recurse -Force -ErrorAction SilentlyContinue
           & $testExe --extract-only --target $target | Out-Host
           if ($LASTEXITCODE -ne 0) { throw "Extraction smoke test failed" }
@@ -242,26 +247,23 @@ jobs:
           }
           $reported = (& $testExe --version | Out-String).Trim()
           if ($reported -ne $env:APP_VERSION) { throw "Version test failed: '$reported'" }
+          $runtimeMarker = Get-Content (Join-Path $target "desktop-runtime.js") -Raw
+          if ($runtimeMarker -notmatch 'cma-v22-import-fix') { throw "Extracted V22 import-fix marker missing" }
           Remove-Item $testExe -Force
 
       - name: Create portable package
         shell: pwsh
         run: |
           @'
-          # US CMA Exam Simulator Desktop V8.0.1
+          # US CMA Exam Simulator Desktop V8.0.2
 
-          Double-click `US-CMA-Exam-Simulator-v8.0.1.exe` to start.
+          Double-click `US-CMA-Exam-Simulator-v8.0.2.exe` to start.
 
-          V8.0.1 fixes question-bank imports that contain nullable explanation/name fields, modern sectionId/unitId metadata, and archived unassigned review records.
+          V8.0.2 forces a clean replacement of the desktop runtime and opens a new browser-app window so the older strict importer cannot remain active. The title bar will show `Desktop V8.0.2` when the correct runtime is loaded.
 
-          V8 also includes:
-          - Flashcard JSON import, deck filters, active-recall study, and spaced-review tracking.
-          - Theory-only, calculation-only, and mixed/scenario filters in Build Test.
-          - Private local PDF revision decks with slide navigation, topic ranges, resume position, bookmarks, completed-page tracking, and full-screen mode.
+          The V22 importer accepts nullable explanation/name fields, modern sectionId/unitId metadata, and archives unassigned classification-review records instead of rejecting the complete bank.
 
-          To use the supplied Section B revision deck, open Revision and attach `CMA Part 2 Section B Slides.PDF`. The file is stored locally in the existing browser profile and is never uploaded by the app.
-
-          The launcher deliberately reuses the V7 browser profile so existing questions, notes, attempts, history, and settings remain available. The 8.0.1 runtime marker forces this hotfix to replace the earlier V8 runtime files.
+          Existing questions, notes, attempts, history, and settings remain in the V7 browser profile.
 
           Windows 10 or Windows 11, 64-bit, with Microsoft Edge or Google Chrome is required.
           '@ | Set-Content -Encoding UTF8 release/README-DESKTOP.md
@@ -270,19 +272,20 @@ jobs:
           Commit: $env:GITHUB_SHA
           Built: $(Get-Date -Format o)
           Platform: Windows x86-64
+          Runtime: forced-clean V22 importer hotfix
           Privacy: No PDF or copyrighted slide asset is included in this public CI package.
           "@ | Set-Content -Encoding UTF8 release/BUILD-INFO.txt
-          $hash = (Get-FileHash release/US-CMA-Exam-Simulator-v8.0.1.exe -Algorithm SHA256).Hash.ToLower()
-          "$hash  US-CMA-Exam-Simulator-v8.0.1.exe" | Set-Content -Encoding ASCII release/SHA256SUMS.txt
-          Compress-Archive -Path release/* -DestinationPath US-CMA-Exam-Simulator-v8.0.1-Windows.zip -CompressionLevel Optimal
+          $hash = (Get-FileHash release/US-CMA-Exam-Simulator-v8.0.2.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  US-CMA-Exam-Simulator-v8.0.2.exe" | Set-Content -Encoding ASCII release/SHA256SUMS.txt
+          Compress-Archive -Path release/* -DestinationPath US-CMA-Exam-Simulator-v8.0.2-Windows.zip -CompressionLevel Optimal
 
       - name: Upload Windows package
         uses: actions/upload-artifact@v4
         with:
-          name: US-CMA-Exam-Simulator-v8.0.1-Windows
+          name: US-CMA-Exam-Simulator-v8.0.2-Windows
           path: |
-            US-CMA-Exam-Simulator-v8.0.1-Windows.zip
-            release/US-CMA-Exam-Simulator-v8.0.1.exe
+            US-CMA-Exam-Simulator-v8.0.2-Windows.zip
+            release/US-CMA-Exam-Simulator-v8.0.2.exe
             release/README-DESKTOP.md
             release/BUILD-INFO.txt
             release/SHA256SUMS.txt
@@ -293,7 +296,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: windows-desktop-v8.0.1-diagnostics
+          name: windows-desktop-v8.0.2-diagnostics
           path: |
             work/
             release/
