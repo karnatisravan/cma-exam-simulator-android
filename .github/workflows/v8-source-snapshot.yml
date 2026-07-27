@@ -36,6 +36,9 @@ jobs:
                 ;;
             esac
           done < <(find _v8_web -type f -print0)
+          grep -RniE 'revision|flashcard|flash card|import|questionType|theory|calculation|test builder|data-screen|screen-' _v8_web --include='*.html' --include='*.js' --include='*.css' | head -n 4000 > v8-source-snapshot/KEYWORD-INDEX.txt || true
+          grep -oE 'id="[^"]+"' _v8_web/index.html | sort -u > v8-source-snapshot/DOM-IDS.txt || true
+          grep -oE '<script[^>]+src="[^"]+"' _v8_web/index.html > v8-source-snapshot/SCRIPT-ORDER.txt || true
       - name: Commit source snapshot
         run: |
           set -euo pipefail
@@ -45,6 +48,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No snapshot changes"
           else
-            git commit -m "Expose V7 web source for V8 feature development"
+            git commit -m "Refresh V7 source snapshot and indexes"
             git push origin HEAD:v8-feature-upgrade
           fi
