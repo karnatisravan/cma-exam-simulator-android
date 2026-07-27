@@ -1,0 +1,221 @@
+_v8_web/pwa.js:163:    if (!preview?.validCount) throw new Error("No valid questions are ready to import.");
+_v8_web/pwa.js:164:    const result = await globalThis.CMAV2.commitImport(preview, selectedConflictMode());
+_v8_web/pwa.js:166:    showMessage(`Imported ${label}: ${result.added} added, ${result.replaced} replaced, ${result.skipped} skipped, ${result.invalid} invalid.`, result.invalid ? "warning" : "success");
+_v8_web/pwa.js:212:      const preview = globalThis.CMAV2.prepareImport({ title: "Manual Question", questions: [raw] }, bankId, "manual-question.json");
+_v8_web/pwa.js:225:      state.filePreview = globalThis.CMAV2.prepareImport(parsed, selectedBankId(), file.name);
+_v8_web/pwa.js:226:      $("easy-import-file").disabled = !state.filePreview.validCount;
+_v8_web/pwa.js:231:      $("easy-import-file").disabled = true;
+_v8_web/pwa.js:239:      state.pastedPreview = globalThis.CMAV2.prepareImport(parsed, selectedBankId(), "pasted-questions.json");
+_v8_web/pwa.js:240:      $("easy-import-json").disabled = !state.pastedPreview.validCount;
+_v8_web/pwa.js:244:      $("easy-import-json").disabled = true;
+_v8_web/pwa.js:258:      $("easy-import-text").disabled = !state.textPreview.validCount;
+_v8_web/pwa.js:264:      $("easy-import-text").disabled = true;
+_v8_web/pwa.js:372:    $("easy-import-file")?.addEventListener("click", async () => { try { await commitPreview(state.filePreview, "file"); state.filePreview = null; $("easy-import-file").disabled = true; $("easy-json-file").value = ""; } catch (error) { showMessage(error.message, "error"); } });
+_v8_web/pwa.js:374:    $("easy-import-json")?.addEventListener("click", async () => { try { await commitPreview(state.pastedPreview, "pasted JSON"); state.pastedPreview = null; $("easy-import-json").disabled = true; } catch (error) { showMessage(error.message, "error"); } });
+_v8_web/pwa.js:376:    $("easy-import-text")?.addEventListener("click", async () => { try { await commitPreview(state.textPreview, "pasted questions"); state.textPreview = null; $("easy-import-text").disabled = true; } catch (error) { showMessage(error.message, "error"); } });
+_v8_web/pwa.js:381:    ["home-import", "empty-manage-bank"].forEach((id) => {
+_v8_web/cma-v2.js:10:    { bankId: "bank-hock", bankName: "HOCK Questions", description: "Empty organizational container for questions you personally import.", isDefault: true },
+_v8_web/cma-v2.js:11:    { bankId: "bank-gleim", bankName: "Gleim Questions", description: "Empty organizational container for questions you personally import.", isDefault: true },
+_v8_web/cma-v2.js:55:    importPreview: null,
+_v8_web/cma-v2.js:151:      questionType: ["theory", "calculation", "scenario", "judgment", "mixed"].includes(raw?.questionType) ? raw.questionType : "mixed",
+_v8_web/cma-v2.js:292:    state.questions = state.questions.map((question, index) => normalizeQuestion(question, question.bankId || "bank-imported", index));
+_v8_web/cma-v2.js:312:    let importedBank = state.banks.find((bank) => bank.bankId === "bank-imported");
+_v8_web/cma-v2.js:313:    if (!importedBank && legacyQuestions.length) {
+_v8_web/cma-v2.js:314:      importedBank = { bankId: "bank-imported", bankName: "Imported Questions", description: "Questions migrated safely from the original combined pool.", status: "active", isDefault: false, createdAt: nowIso(), updatedAt: nowIso(), deletedAt: null };
+_v8_web/cma-v2.js:315:      state.banks.push(importedBank);
+_v8_web/cma-v2.js:320:      const bankId = raw.bankId && state.banks.some((bank) => bank.bankId === raw.bankId) ? raw.bankId : importedBank?.bankId || "bank-custom";
+_v8_web/cma-v2.js:402:    let importedBank = state.banks.find((bank) => bank.bankId === "bank-imported");
+_v8_web/cma-v2.js:403:    if (!importedBank) {
+_v8_web/cma-v2.js:404:      importedBank = createBank("Imported Questions", "Questions imported through the original compatibility screen.", "bank-imported");
+_v8_web/cma-v2.js:415:      const normalized = normalizeQuestion(raw, raw.bankId || importedBank.bankId, index);
+_v8_web/cma-v2.js:557:  function validateImportedQuestion(raw, index) {
+_v8_web/cma-v2.js:572:  function prepareImport(parsed, bankId, fileName = "questions.json") {
+_v8_web/cma-v2.js:578:      const result = validateImportedQuestion(raw, index);
+_v8_web/cma-v2.js:606:  async function commitImport(preview, conflictMode = "skip") {
+_v8_web/cma-v2.js:946:      revisionHistory: previous ? [...(previous.revisionHistory || []), { noteText: previous.noteText, updatedAt: previous.updatedAt }].slice(-10) : []
+_v8_web/cma-v2.js:1128:    banks.innerHTML = `<div class="page-heading"><div><button class="back-button" data-v2-home type="button">← Dashboard</button><span class="eyebrow">Multi-bank study library</span><h1 id="v2-banks-title">Question Banks</h1><p>Keep each source independent while using one CMA section and unit catalog.</p></div><div class="button-row"><button class="button button-primary" id="v2-create-bank" type="button">Create bank</button><button class="button button-secondary" id="v2-open-import" type="button">Import questions</button></div></div><div id="v2-migration-report" class="message message-success" hidden></div><div id="v2-bank-summary" class="bank-stat-grid"></div><div id="v2-bank-list" class="v2-bank-grid"></div><section class="panel" id="v2-import-panel" hidden><div class="section-heading"><div><span class="eyebrow">Validated destination import</span><h2>Import JSON questions</h2></div><button class="button button-quiet" id="v2-close-import" type="button">Close</button></div><div class="settings-grid"><label>Destination bank<select id="v2-import-bank"></select></label><label>Question file<input id="v2-import-file" type="file" accept=".json,application/json"></label><label>Same-bank ID conflicts<select id="v2-import-conflict"><option value="skip">Skip incoming</option><option value="replace">Replace content; preserve history</option><option value="new">Import as new ID</option></select></label></div><div id="v2-import-summary" class="message" hidden></div><div class="button-row"><button class="button button-primary" id="v2-commit-import" type="button" disabled>Confirm import</button><button class="button button-secondary" id="v2-create-bank-import" type="button">Create bank here</button></div></section><section class="panel"><div class="section-heading"><div><span class="eyebrow">Queues and recovery</span><h2>Review special question lists</h2></div></div><div class="button-row"><button class="button button-secondary" data-v2-queue="held" type="button">Solved Twice / Held</button><button class="button button-secondary" data-v2-queue="remediation" type="button">Needs Remediation</button><button class="button button-secondary" data-v2-queue="removed" type="button">Removed Questions</button><button class="button button-secondary" data-v2-queue="notes" type="button">Question Notes</button><button class="button button-quiet" id="v2-open-legacy-bank" type="button">Open compatibility bank tools</button></div></section>`;
+_v8_web/cma-v2.js:1155:    ["home-open-bank", "home-import", "empty-manage-bank", "v2-home-banks"].forEach((id) => captureOpen(id, "banks"));
+_v8_web/cma-v2.js:1161:    document.getElementById("v2-open-import")?.addEventListener("click", () => { document.getElementById("v2-import-panel").hidden = false; renderImportBanks(); });
+_v8_web/cma-v2.js:1162:    document.getElementById("v2-close-import")?.addEventListener("click", () => { document.getElementById("v2-import-panel").hidden = true; });
+_v8_web/cma-v2.js:1163:    document.getElementById("v2-create-bank-import")?.addEventListener("click", async () => { const name = prompt("New destination bank name:"); if (!name) return; try { const bank = createBank(name); await persistAll(); renderImportBanks(); document.getElementById("v2-import-bank").value = bank.bankId; } catch (e) { alert(e.message); } });
+_v8_web/cma-v2.js:1164:    document.getElementById("v2-import-file")?.addEventListener("change", handleImportFile);
+_v8_web/cma-v2.js:1165:    document.getElementById("v2-import-bank")?.addEventListener("change", () => { state.importPreview = null; document.getElementById("v2-import-summary").hidden = true; document.getElementById("v2-commit-import").disabled = true; document.getElementById("v2-import-file").value = ""; });
+_v8_web/cma-v2.js:1166:    document.getElementById("v2-commit-import")?.addEventListener("click", async () => { try { const result = await commitImport(state.importPreview, document.getElementById("v2-import-conflict").value); showBox(document.getElementById("v2-import-summary"), `Import complete: ${result.added} added, ${result.replaced} replaced, ${result.skipped} skipped, ${result.invalid} invalid.`, "success"); document.getElementById("v2-commit-import").disabled = true; } catch (e) { showBox(document.getElementById("v2-import-summary"), e.message, "error"); } });
+_v8_web/cma-v2.js:1227:    renderImportBanks();
+_v8_web/cma-v2.js:1231:  function renderImportBanks() {
+_v8_web/cma-v2.js:1232:    const select = document.getElementById("v2-import-bank"); if (!select) return; const value = select.value; select.replaceChildren(); activeBanks().forEach((bank) => { const o = el("option", "", bank.bankName); o.value = bank.bankId; select.append(o); }); if (activeBanks().some((b) => b.bankId === value)) select.value = value;
+_v8_web/cma-v2.js:1235:  async function handleImportFile(event) {
+_v8_web/cma-v2.js:1236:    const file = event.target.files?.[0]; if (!file) return; const box = document.getElementById("v2-import-summary");
+_v8_web/cma-v2.js:1237:    try { const parsed = JSON.parse(await file.text()); const bankId = document.getElementById("v2-import-bank").value; state.importPreview = prepareImport(parsed, bankId, file.name); const p = state.importPreview; showBox(box, `${p.fileName}: ${p.validCount}/${p.total} valid. Invalid: ${p.invalidCount}. Same-bank ID conflicts: ${p.duplicateIds.length}. Same-bank exact text duplicates: ${p.duplicateText.length}. Similar content in other banks: ${p.crossBankDuplicates.length}. Missing explanations: ${p.missingExplanation}.`, p.invalidCount ? "warning" : "success"); document.getElementById("v2-commit-import").disabled = !p.validCount; }
+_v8_web/cma-v2.js:1238:    catch (e) { state.importPreview = null; showBox(box, `Import preview failed: ${e.message}`, "error"); document.getElementById("v2-commit-import").disabled = true; }
+_v8_web/cma-v2.js:1352:        questionType: "mixed",
+_v8_web/cma-v2.js:1357:    const preview = prepareImport({ title: "Pasted Questions", questions }, bankId, "pasted-questions.txt");
+_v8_web/cma-v2.js:1371:    prepareImport, commitImport, normalizeQuestion, validateImportedQuestion, parsePlainTextQuestions, syncExactHockCatalog,
+_v8_web/cma-2025-reference.js:44:        ["B.2", "Calculation of the Value of a Share"],
+_v8_web/app.js:13:    importQueue: "cma-simulator-import-queue-v1",
+_v8_web/app.js:185:    importQueue: [],
+_v8_web/app.js:186:    importFilter: "all",
+_v8_web/app.js:480:      questionType: typeof rawQuestion.questionType === "string" ? rawQuestion.questionType : "mixed",
+_v8_web/app.js:540:  function prepareQuestionImport(input, options = {}) {
+_v8_web/app.js:627:      readStorageDurable(STORAGE_KEYS.importQueue, []),
+_v8_web/app.js:646:    state.importQueue = Array.isArray(savedQueue) ? savedQueue : [];
+_v8_web/app.js:676:        state.bankSource = "imported";
+_v8_web/app.js:677:        state.bankName = isNonEmptyString(savedBank.name) ? savedBank.name : "Imported question bank";
+_v8_web/app.js:725:      importQueue: deepClone(state.importQueue),
+_v8_web/app.js:743:    const routeMap = { setup: "exam-center", import: "bank", syllabus: "bank", weak: "progress", history: "progress" };
+_v8_web/app.js:757:    return ["home", "exam-center", "setup", "bank", "import", "syllabus", "weak", "history", "study", "settings"].includes(destination) ? destination : "home";
+_v8_web/app.js:955:      state.bankSource = "imported";
+_v8_web/app.js:1027:    const titleMap = { home: "CMA Exam Simulator", setup: "Configure Exam", "exam-center": "Exam Center", bank: "Question Bank", import: "Question Bank · Import", syllabus: "Question Bank · Sections & Units", history: "Progress", weak: "Progress · Weak Areas", study: "Study", settings: "Settings" };
+_v8_web/app.js:1029:    const destinationMap = { setup: "exam-center", import: "bank", syllabus: "bank", weak: "progress", history: "progress" };
+_v8_web/app.js:1073:    dom["dashboard-status-line"].textContent = state.activeExam ? "An active exam is ready to resume." : state.history.length ? "Continue from your latest evidence and review queue." : "Start with a focused test or import your own questions.";
+_v8_web/app.js:1542:    dom["bank-source"].textContent = state.bankStorageUnsaved ? "Unsaved in-memory bank" : state.bankSource === "demonstration" ? "Demonstration bank" : state.bankSource === "imported" ? state.bankName : "No bank loaded";
+_v8_web/app.js:1561:    const validPanes = new Set(["browse", "import", "catalog", "export"]);
+_v8_web/app.js:1564:    const activeButton = { browse: "bank-tab-browse", import: "bank-tab-import", catalog: "bank-tab-syllabus", export: "bank-tab-export" }[state.bankPane];
+_v8_web/app.js:1901:    const validation = prepareQuestionImport(parsed.records, { existingIds: state.questionBank.map((question) => question.id) });
+_v8_web/app.js:1914:    state.bankSource = "imported";
+_v8_web/app.js:1932:    dom["import-status"].hidden = true;
+_v8_web/app.js:1943:      const status = dom["import-status"];
+_v8_web/app.js:1956:      const validation = prepareQuestionImport(parsed);
+_v8_web/app.js:1988:  async function commitBankFileImport(mode) {
+_v8_web/app.js:2007:    state.bankSource = "imported";
+_v8_web/app.js:2015:    const status = dom["import-status"];
+_v8_web/app.js:2027:    appendText(container, "h3", "", `Import rejected — ${errors.length} issue${errors.length === 1 ? "" : "s"}`);
+_v8_web/app.js:2032:    dom["import-status"].hidden = true;
+_v8_web/app.js:2036:    const prepared = prepareQuestionImport(DEMO_QUESTIONS);
+_v8_web/app.js:2051:  async function clearImportedBank() {
+_v8_web/app.js:2068:    setMessage("The imported question bank was cleared. Restore the demonstration bank or import another file to start an exam.", "warning");
+_v8_web/app.js:2170:    setMessage(`Exported ${questions.length} question${questions.length === 1 ? "" : "s"} as directly importable JSON.`, "success");
+_v8_web/app.js:2275:    state.bankSource = "imported";
+_v8_web/app.js:2317:    state.importQueue = selected.map((question, index) => ({ temporaryId: `bank-${stamp}-${index + 1}`, existingQuestionId: question.id, questionNumber: index + 1, question: question.question, options: deepClone(question.options), correctAnswer: question.correctAnswer, explanation: question.explanation, sectionId: question.sectionId || question.section, unitId: question.unitId, topic: question.topic || "", tags: question.tags || [], difficulty: String(question.difficulty || "Medium").toLowerCase(), source: question.source || "question-bank", classificationStatus: "classified", classificationConfidence: question.classification?.confidence, approved: false, reviewed: false, allowDuplicate: true, validationErrors: [] }));
+_v8_web/app.js:2318:    state.selectedBankQuestions.clear(); persistAdvancedState(); openNamedScreen("import"); setMessage(`${selected.length} question${selected.length === 1 ? " is" : "s are"} ready for classification review.`, "success");
+_v8_web/app.js:2330:    dom["exam-screen-title"].textContent = state.activeExam.title;
+_v8_web/app.js:3686:    const container = dom["study-checklist"]; container.replaceChildren(); state.studyData.checklist.forEach((item) => { const row = el("div", "checklist-item"); const input = el("input"); input.type = "checkbox"; input.checked = Boolean(item.done); input.dataset.checklistToggle = item.id; appendText(row, "span", "", item.text); const remove = el("button", "button button-quiet small-button", "Remove"); remove.type = "button"; remove.dataset.checklistRemove = item.id; row.prepend(input); row.append(remove); container.append(row); }); if (!state.studyData.checklist.length) appendText(container, "p", "muted-empty", "No revision items yet.");
+_v8_web/app.js:3705:    const result = ADVANCED.parseQuestionText(dom["text-import-input"].value, state.catalog);
+_v8_web/app.js:3709:    state.importQueue = result.candidates.map((candidate, index) => ({
+_v8_web/app.js:3721:    dom["ai-import-status"].hidden = false; dom["ai-import-status"].className = `message ${result.candidates.length ? "message-success" : "message-error"}`;
+_v8_web/app.js:3722:    dom["ai-import-status"].textContent = result.candidates.length ? `Parsed ${result.candidates.length} question${result.candidates.length === 1 ? "" : "s"}. Review every item before saving.` : "No questions could be parsed.";
+_v8_web/app.js:3723:    renderImportQueue();
+_v8_web/app.js:3726:  function renderImportQueue() {
+_v8_web/app.js:3727:    dom["import-queue-count"].textContent = state.importQueue.length;
+_v8_web/app.js:3728:    const container = dom["import-review-list"]; container.replaceChildren();
+_v8_web/app.js:3729:    const filter = dom["import-filter"]?.value || state.importFilter || "all"; state.importFilter = filter;
+_v8_web/app.js:3730:    const visible = state.importQueue.filter((item) => filter === "all" || queueStatus(item) === filter);
+_v8_web/app.js:3731:    if (!visible.length) { appendText(container, "p", "muted-empty", state.importQueue.length ? "No review items match this filter." : "Parse pasted questions to create a review queue."); return; }
+_v8_web/app.js:3733:      const status = queueStatus(item); const card = el("article", `import-review-card${status === "error" ? " has-errors" : ""}`); card.dataset.queueId = item.temporaryId;
+_v8_web/app.js:3754:  function handleImportQueueChange(event) {
+_v8_web/app.js:3756:    const item = state.importQueue.find((candidate) => candidate.temporaryId === card.dataset.queueId); if (!item) return;
+_v8_web/app.js:3761:    if (field === "sectionId") { item.unitId = ""; item.approved = false; renderImportQueue(); }
+_v8_web/app.js:3767:    state.importQueue.forEach((item) => { if (queueStatus(item) === "ready" && Number(item.classificationConfidence) >= 0.85 && !(item.duplicateMatches?.near?.length || item.possibleDuplicateIds?.length)) { item.approved = true; item.reviewed = true; } }); persistAdvancedState(); renderImportQueue();
+_v8_web/app.js:3771:    const approved = state.importQueue.filter((item) => item.approved && queueStatus(item) === "ready" && (item.allowDuplicate || !(item.duplicateMatches?.exactTextId || item.duplicateMatches?.near?.length || item.possibleDuplicateIds?.length)));
+_v8_web/app.js:3772:    const raw = approved.map((item, index) => { const unit = ADVANCED.findUnit(state.catalog, item.sectionId, item.unitId); const section = ADVANCED.findSection(state.catalog, item.sectionId); return { id: item.existingQuestionId || `${unit.id}-${Date.now().toString(36)}-${String(index + 1).padStart(3, "0")}`, sectionId: section.id, unitId: unit.id, section: section.id, sectionName: section.name, unit: unit.unitCode, unitName: unit.unitName, question: item.question, options: item.options, correctAnswer: item.correctAnswer, explanation: item.explanation, topic: item.topic, tags: item.tags, difficulty: item.difficulty === "unspecified" ? "Medium" : item.difficulty[0].toUpperCase() + item.difficulty.slice(1), source: item.source || "text-import", classification: { status: "confirmed", method: item.classificationConfidence !== undefined ? "ai-reviewed" : "human-reviewed", confidence: Number(item.classificationConfidence) || 1, reviewed: true, reviewedAt: new Date().toISOString(), briefReason: item.briefReason || "" } }; });
+_v8_web/app.js:3776:    const merged = mergeQuestions(state.questionBank, validation.questions, "replace"); state.questionBank = merged.questions; state.importQueue = state.importQueue.filter((item) => !approved.includes(item)); state.bankName = "Personal CMA question bank"; persistQuestionBank(state.bankName); persistAdvancedState(); renderImportQueue(); renderHome(); renderBankScreen(); setMessage(`Saved ${validation.questions.length} approved question${validation.questions.length === 1 ? "" : "s"} to the bank.`, "success");
+_v8_web/app.js:3779:  async function classifyImportQueue() {
+_v8_web/app.js:3782:    const candidates = state.importQueue.filter((item) => !item.validationErrors?.length); if (!candidates.length) { setMessage("Parse valid questions before requesting classification.", "warning"); return; }
+_v8_web/app.js:3784:    const status = dom["ai-import-status"]; status.hidden = false; status.className = "message";
+_v8_web/app.js:3792:        validated.results.forEach((result) => { const item = state.importQueue.find((candidate) => candidate.temporaryId === result.temporaryId); if (item) Object.assign(item, result, { approved: false, reviewed: false }); });
+_v8_web/app.js:3793:        completed += batch.length; dom["ai-progress"].value = (completed / candidates.length) * 100; persistAdvancedState(); renderImportQueue();
+_v8_web/app.js:3925:      const confirmed = await askConfirmation("Remove this empty section?", "You can restore it later by importing a catalog backup.", "Remove section");
+_v8_web/app.js:3939:    writeStorage(STORAGE_KEYS.importQueue, state.importQueue);
+_v8_web/app.js:3943:    const map = { home: "dashboard", setup: "exam-center", "exam-center": "exam-center", bank: "bank", import: "bank", syllabus: "bank", weak: "progress", history: "progress", study: "study", settings: "settings" };
+_v8_web/app.js:3956:    if (name === "import") renderImportQueue();
+_v8_web/app.js:4004:    const localEstimate = new Blob([JSON.stringify({ questionBank: state.questionBank, history: state.history, catalog: state.catalog, importQueue: state.importQueue })]).size;
+_v8_web/app.js:4019:      ? `Large banks are stored in IndexedDB. The browser currently reports ${percent.toFixed(2)}% of its available site storage in use. Every imported question is normalized to the latest schema before saving.`
+_v8_web/app.js:4068:    const backup = ADVANCED.createFullBackup({ questionBank: state.questionBank, catalog: state.catalog, history: state.history, settings: state.analyticsSettings, importQueue: state.importQueue });
+_v8_web/app.js:4099:      state.importQueue = Array.isArray(parsed.importQueue) ? parsed.importQueue : [];
+_v8_web/app.js:4155:    dom["home-import"].addEventListener("click", () => openNamedScreen("import"));
+_v8_web/app.js:4292:    dom["add-bank-file"].addEventListener("click", () => commitBankFileImport("add"));
+_v8_web/app.js:4293:    dom["replace-bank-file"].addEventListener("click", () => commitBankFileImport("replace"));
+_v8_web/app.js:4341:    dom["clear-bank"].addEventListener("click", clearImportedBank);
+_v8_web/app.js:4346:    dom["bank-tab-import"].addEventListener("click", () => setBankPane("import"));
+_v8_web/app.js:4354:    dom["bank-guided-import"].addEventListener("click", () => openNamedScreen("import"));
+_v8_web/app.js:4370:    dom["text-import-back"].addEventListener("click", () => openNamedScreen("bank"));
+_v8_web/app.js:4372:    dom["classify-ai"].addEventListener("click", classifyImportQueue);
+_v8_web/app.js:4374:    dom["import-filter"].addEventListener("change", renderImportQueue);
+_v8_web/app.js:4375:    dom["import-review-list"].addEventListener("change", handleImportQueueChange);
+_v8_web/app.js:4378:    dom["clear-import-queue"].addEventListener("click", async () => { if (!state.importQueue.length) return; const confirmed = await askConfirmation("Clear the import review queue?", "Parsed and classified review items will be removed. The active question bank is unchanged.", "Clear queue"); if (confirmed) { state.importQueue = []; persistAdvancedState(); renderImportQueue(); } });
+_v8_web/app.js:4392:    dom["add-study-checklist"].addEventListener("click", () => { const text = dom["study-checklist-new"].value.trim(); if (!text) return; state.studyData.checklist.push({ id: createId("checklist"), text, done: false }); dom["study-checklist-new"].value = ""; persistStudyData("Revision item added."); renderStudyChecklist(); });
+_v8_web/app.js:4393:    dom["study-checklist"].addEventListener("click", (event) => { const remove = event.target.closest("[data-checklist-remove]"); if (!remove) return; state.studyData.checklist = state.studyData.checklist.filter((item) => item.id !== remove.dataset.checklistRemove); persistStudyData("Revision item removed."); renderStudyChecklist(); });
+_v8_web/app.js:4394:    dom["study-checklist"].addEventListener("change", (event) => { const input = event.target.closest("[data-checklist-toggle]"); if (!input) return; const item = state.studyData.checklist.find((candidate) => candidate.id === input.dataset.checklistToggle); if (item) item.done = input.checked; persistStudyData("Revision checklist updated."); });
+_v8_web/app.js:4466:    prepareQuestionImport,
+_v8_web/index.html:91:          <p>Import a JSON question bank or restore the demonstration questions before starting an exam.</p>
+_v8_web/index.html:97:        <section class="panel compact-panel" aria-labelledby="bank-snapshot-title"><div class="compact-section-heading"><h2 id="bank-snapshot-title">Question Bank</h2><button class="text-button" id="home-import" type="button">Import questions</button></div><div class="mini-stat-grid"><div><span>Total</span><strong id="home-question-count">0</strong></div><div><span>Active</span><strong id="home-bank-active">0</strong></div><div><span>Retired</span><strong id="home-bank-retired">0</strong></div><div><span>Unclassified</span><strong id="home-bank-unclassified">0</strong></div><div><span>No explanation</span><strong id="home-bank-unexplained">0</strong></div></div><div class="button-row"><button class="button button-secondary" id="home-open-bank" type="button">Open Question Bank</button><button class="button button-quiet" id="home-reference-open" type="button">Sections &amp; Units</button></div></section>
+_v8_web/index.html:217:    <section id="exam-screen" class="screen exam-screen" aria-labelledby="exam-screen-title" hidden>
+_v8_web/index.html:221:          <h1 id="exam-screen-title">CMA Practice Exam</h1>
+_v8_web/index.html:395:          <p>Import, paste, search, edit, and export a private CMA bank. Everything stays on this device.</p>
+_v8_web/index.html:399:      <div class="subnav bank-tabs" aria-label="Question Bank tools"><button id="bank-tab-browse" type="button">Browse</button><button id="bank-tab-import" type="button">Import</button><button id="bank-tab-add" type="button">Add Manually</button><button id="bank-tab-syllabus" type="button">Sections &amp; Units</button><button id="bank-tab-retired" type="button">Retired</button><button id="bank-tab-unclassified" type="button">Unclassified</button><button id="bank-tab-duplicates" type="button">Duplicate Review</button><button id="bank-tab-export" type="button">Export</button><button id="bank-tab-backup" type="button">Bank Backup</button></div>
+_v8_web/index.html:417:      <div class="bank-layout" data-bank-pane="import">
+_v8_web/index.html:418:        <section class="panel import-panel" aria-labelledby="import-title">
+_v8_web/index.html:420:          <h2 id="import-title">Import JSON question bank</h2>
+_v8_web/index.html:433:          <div id="import-status" class="message" role="status" aria-live="polite" hidden></div>
+_v8_web/index.html:435:          <button class="button button-secondary button-full" id="bank-guided-import" type="button">Open guided text importer</button>
+_v8_web/index.html:451:      <section class="panel bulk-panel" data-bank-pane="import" aria-labelledby="bulk-title">
+_v8_web/index.html:568:        <div><button class="back-button" id="syllabus-back" type="button">← Dashboard</button><span class="eyebrow">Permanent study structure</span><h1 id="syllabus-title">Sections &amp; Units</h1><p>Edit the catalog used by setup, imports, analytics, and history snapshots.</p></div>
+_v8_web/index.html:579:    <section id="import-screen" class="screen bank-subfeature-screen" aria-labelledby="text-import-title" hidden>
+_v8_web/index.html:581:        <div><button class="back-button" id="text-import-back" type="button">← Question Bank</button><span class="eyebrow">Question Bank · Import</span><h1 id="text-import-title">Import Questions</h1><p>Parse, validate, detect duplicates, classify, review, and approve before anything enters the bank.</p></div>
+_v8_web/index.html:582:        <div class="availability-chip"><strong id="import-queue-count">0</strong> in review</div>
+_v8_web/index.html:585:        <label class="field" for="text-import-input"><span>Question text</span><textarea id="text-import-input" rows="16" spellcheck="false" placeholder="1. Question text&#10;A. First option&#10;B. Second option&#10;C. Third option&#10;D. Fourth option&#10;Answer: B&#10;Explanation: Optional explanation"></textarea></label>
+_v8_web/index.html:588:        <div id="ai-import-status" class="message" role="status" aria-live="polite" hidden></div>
+_v8_web/index.html:593:        <div class="section-heading filter-heading"><div><span class="eyebrow">Mandatory review queue</span><h2>Review before saving</h2></div><div class="filter-controls"><label>Status <select id="import-filter"><option value="all">All</option><option value="ready">Ready</option><option value="unclassified">Unclassified</option><option value="error">Has errors</option></select></label></div></div>
+_v8_web/index.html:594:        <div class="button-row"><button class="button button-secondary" id="approve-high" type="button">Approve high confidence</button><button class="button button-primary" id="save-approved" type="button">Save approved to bank</button><button class="button button-danger-quiet" id="clear-import-queue" type="button">Clear queue</button></div>
+_v8_web/index.html:595:        <div id="import-review-list" class="import-review-list"></div>
+_v8_web/index.html:620:      <div class="page-heading"><div><button class="back-button" id="study-back" type="button">← Dashboard</button><span class="eyebrow">Notes, summaries, and revision</span><h1 id="study-title">Study</h1><p>Keep local unit summaries, notes, formula notes, revision checklists, and mistake resolutions.</p></div></div>
+_v8_web/index.html:621:      <div class="subnav study-tabs" role="tablist" aria-label="Study tools"><button data-study-tab="summaries" type="button">Unit Summaries</button><button data-study-tab="notes" type="button">Unit Notes</button><button data-study-tab="mistakes" type="button">Mistake Log</button><button data-study-tab="formulas" type="button">Formula Notes</button><button data-study-tab="checklist" type="button">Revision Checklist</button><button data-study-tab="due" type="button">Due for Review</button></div>
+_v8_web/index.html:627:      <section data-study-pane="checklist" class="panel" hidden><h2>Revision checklist</h2><div id="study-checklist"></div><div class="button-row"><input id="study-checklist-new" type="text" placeholder="Add a revision item"><button class="button button-secondary" id="add-study-checklist" type="button">Add item</button></div></section>
+_v8_web/index.html:683:          <label class="consent-row"><input id="case-practice-review" type="checkbox" checked> Show explanations and model calculations after submission</label>
+_v8_web/index.html:719:        <div class="section-heading filter-heading"><div><span class="eyebrow">Reusable local scenarios</span><h2 id="case-bank-title">Case bank</h2><p>Import your own case sets or use the included software demonstrations.</p></div><div class="button-row"><button class="button button-secondary" id="export-case-bank" type="button">Export cases</button><label class="button button-secondary file-button">Import case JSON<input id="case-bank-file" type="file" accept=".json,application/json"></label><button class="button button-quiet" id="restore-demo-cases" type="button">Restore demonstrations</button></div></div>
+_v8_web/index.html:722:        <details class="case-import-details"><summary>Paste case JSON</summary><p class="summary-note">Accepts an array or an object with a <code>cases</code> array. Existing IDs are replaced after validation.</p><textarea id="case-json-input" rows="12" spellcheck="false" placeholder="Paste case JSON here"></textarea><div class="button-row"><button class="button button-primary" id="import-case-json" type="button">Validate and import</button><a class="button button-secondary" href="case-bank-template.json" download>Download template</a></div></details>
+_v8_web/index.html:893:        <div><span class="eyebrow">Simple question workspace</span><h2>Add Questions</h2><p>Add one question, import JSON, or paste a formatted set. The exact HOCK 2024-2025 unit names are applied automatically.</p></div>
+_v8_web/index.html:899:        <label>Conflict handling<select id="easy-add-conflict"><option value="skip">Skip duplicate ID</option><option value="replace">Replace content and keep history</option><option value="new">Import as a new ID</option></select></label>
+_v8_web/index.html:928:        <div class="button-row"><button class="button button-primary" id="easy-import-file" type="button" disabled>Import file</button></div>
+_v8_web/index.html:932:        <label class="field"><span>Paste import-ready JSON</span><textarea id="easy-json-text" rows="14" spellcheck="false" placeholder='{"title":"My Bank","questions":[...]}'></textarea></label>
+_v8_web/index.html:933:        <div class="button-row"><button class="button button-secondary" id="easy-preview-json" type="button">Validate JSON</button><button class="button button-primary" id="easy-import-json" type="button" disabled>Import validated JSON</button></div>
+_v8_web/index.html:946:        <div class="button-row"><button class="button button-secondary" id="easy-preview-text" type="button">Parse questions</button><button class="button button-primary" id="easy-import-text" type="button" disabled>Import parsed questions</button></div>
+_v8_web/styles.css:76:.import-review-list { display: grid; gap: 1rem; margin-top: 1rem; }
+_v8_web/styles.css:77:.import-review-card { border: 1px solid var(--border, #d7dde5); border-radius: 16px; padding: 1rem; }
+_v8_web/styles.css:78:.import-review-card.has-errors { border-color: #dc2626; }
+_v8_web/styles.css:79:.import-review-card .review-header { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
+_v8_web/styles.css:83:.consent-row { display: flex !important; align-items: center; gap: .55rem; font-weight: 600 !important; }
+_v8_web/styles.css:84:.consent-row input { width: auto !important; }
+_v8_web/styles.css:89:.screen[hidden] { display: none !important; }
+_v8_web/styles.css:94:@media print { .app-nav { display: none !important; } }
+_v8_web/styles.css:155:[hidden] { display: none !important; }
+_v8_web/styles.css:173:  position: absolute !important;
+_v8_web/styles.css:174:  width: 1px !important;
+_v8_web/styles.css:175:  height: 1px !important;
+_v8_web/styles.css:176:  padding: 0 !important;
+_v8_web/styles.css:177:  margin: -1px !important;
+_v8_web/styles.css:178:  overflow: hidden !important;
+_v8_web/styles.css:179:  clip: rect(0, 0, 0, 0) !important;
+_v8_web/styles.css:180:  white-space: nowrap !important;
+_v8_web/styles.css:181:  border: 0 !important;
+_v8_web/styles.css:476:.timer-card { min-width: 120px !important; border: 1px solid var(--accent) !important; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--accent); }
+_v8_web/styles.css:477:.timer-card.warning { border-color: var(--warning) !important; background: var(--warning-soft); color: var(--warning); }
+_v8_web/styles.css:478:.timer-card.critical { border-color: var(--danger) !important; background: var(--danger-soft); color: var(--danger); }
+_v8_web/styles.css:479:.timer-card.secondary { border-color: var(--border) !important; background: var(--surface-muted); color: var(--text); }
+_v8_web/styles.css:599:.import-panel, .bank-summary, .bank-actions-panel, .schema-panel { padding: 1.3rem; }
+_v8_web/styles.css:676:.reference-unit-count { grid-column: 2; grid-row: 1 / span 2; align-self: center; padding: .2rem .45rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent) !important; font-size: .68rem !important; font-weight: 750; white-space: nowrap; }
+_v8_web/styles.css:677:.reference-unit-count.is-empty { background: var(--surface-soft); color: var(--text-faint) !important; }
+_v8_web/styles.css:736:  .timer-card { min-width: 0 !important; grid-column: span 2; }
+_v8_web/styles.css:806:  .site-header, .results-actions, .back-button, .filter-controls, .filter-heading > label, .review-section, #global-message { display: none !important; }
+_v8_web/styles.css:815:  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .001ms !important; transition-duration: .001ms !important; }
+_v8_web/styles.css:860:.case-import-details { margin-top: 1rem; padding: .8rem; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+_v8_web/styles.css:861:.case-import-details summary { cursor: pointer; font-weight: 800; }
+_v8_web/styles.css:862:.case-import-details textarea { width: 100%; margin: .8rem 0; padding: .75rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+_v8_web/styles.css:1804:  .screen, .button, .dashboard-action, .exam-mode-selection-grid article { animation: none !important; transition: none !important; }
+_v8_web/styles.css:1817:  .site-header, .app-nav { display: none !important; }
+_v8_web/styles.css:1818:  main { margin: 0 !important; padding: 0 !important; }
+_v8_web/styles.css:1838:.easy-add-pane[hidden] { display: none !important; }
+_v8_web/styles.css:1850:  .header-install { display: none !important; }
+_v8_web/cma-advanced.js:266:        temporaryId: `import-${String(candidates.length + 1).padStart(3, "0")}`,
+_v8_web/cma-advanced.js:278:        source: "text-import",
+_v8_web/cma-advanced.js:675:  function createFullBackup({ questionBank, catalog, history, settings, importQueue }) {
+_v8_web/cma-advanced.js:684:      importQueue: clone(importQueue || [])
+_v8_web/cma-case.js:55:      title: "Northstar Imports — Currency and Enterprise Risk",
+_v8_web/cma-case.js:59:      scenario: "Northstar Imports must pay €400,000 to a supplier in 90 days. The current spot rate is $1.08 per euro. A 90-day forward contract is available at $1.10 per euro. Management is concerned that the euro will appreciate.\n\nNorthstar's risk team identifies a separate cyber event with a 20% annual probability and an estimated loss of $600,000. A control costing $45,000 annually would reduce the probability to 8% while leaving loss severity unchanged.",
+_v8_web/cma-case.js:545:    if (!state.caseBank.length) addText(list, "p", "muted-empty", "No case sets are loaded. Restore the demonstrations or import case JSON.");
+_v8_web/cma-case.js:909:  async function importCases(value) {
+_v8_web/cma-case.js:912:    state.caseBank = [...state.caseBank.filter((item) => !incoming.has(item.id)), ...validation.cases]; saveBank(); renderExamCenter(); caseMessage(`${validation.cases.length} case set${validation.cases.length === 1 ? "" : "s"} imported; ${replaced} existing ID${replaced === 1 ? " was" : "s were"} replaced.`, "success"); return true;
+_v8_web/cma-case.js:915:  async function handleCaseFile(event) { const file = event.target.files?.[0]; if (!file) return; try { await importCases(JSON.parse(await file.text())); } catch (error) { caseMessage(`Cases were not imported: ${error.message}`, "error"); } finally { event.target.value = ""; } }
+_v8_web/cma-case.js:944:    dom["case-bank-file"].addEventListener("change", handleCaseFile); dom["import-case-json"].addEventListener("click", async () => { try { if (await importCases(JSON.parse(dom["case-json-input"].value))) dom["case-json-input"].value = ""; } catch (error) { caseMessage(`Cases were not imported: ${error.message}`, "error"); } });
+_v8_web/cma-case.js:946:    dom["restore-demo-cases"].addEventListener("click", () => importCases(DEMO_CASES));
+_v8_web/cma-storage.js:27:    "cma-simulator-import-queue-v1",
